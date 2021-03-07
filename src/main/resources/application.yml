@@ -4,9 +4,9 @@ spring:
     active: local
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://arjuna.db.elephantsql.com:5432/kfnzwjso 
-      username: kfnzwjso
-      password: M75X9usBzmjW4xdelDwzolmzT73lnYb1 
+      jdbc-url: jdbc:postgresql://54.180.140.193:5432/stocking 
+      username: stocking
+      password: stocking1234
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
       minimum-idle: 1
