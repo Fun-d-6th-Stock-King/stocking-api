@@ -1,0 +1,67 @@
+{"properties": [
+  {
+    "name": "spring.datasource.hikari.hibernate.dialect",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.datasource.hikari.hibernate.dialect'"
+  },
+  {
+    "name": "spring.datasource.hikari.hibernate.showSql",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.datasource.hikari.hibernate.showSql'"
+  },
+  {
+    "name": "spring.datasource.hikari.hibernate.formatSql",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.datasource.hikari.hibernate.formatSql'"
+  },
+  {
+    "name": "spring.datasource.hikari.hibernate.hbm2ddlAuto",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.datasource.hikari.hibernate.hbm2ddlAuto'"
+  },
+  {
+    "name": "hibernate.dialect",
+    "type": "java.lang.String",
+    "description": "A description for 'hibernate.dialect'"
+  },
+  {
+    "name": "hibernate.showSql",
+    "type": "java.lang.String",
+    "description": "A description for 'hibernate.showSql'"
+  },
+  {
+    "name": "hibernate.formatSql",
+    "type": "java.lang.String",
+    "description": "A description for 'hibernate.formatSql'"
+  },
+  {
+    "name": "hibernate.hbm2ddlAuto",
+    "type": "java.lang.String",
+    "description": "A description for 'hibernate.hbm2ddlAuto'"
+  },
+  {
+    "name": "logging.level[io.swagger.models.parameters.AbstractSerializableParameter]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[io.swagger.models.parameters.AbstractSerializableParameter]'"
+  },
+  {
+    "name": "logging.level[org.springframework]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.springframework]'"
+  },
+  {
+    "name": "logging.level[org.hibernate.type.descriptor.sql]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.hibernate.type.descriptor.sql]'"
+  },
+  {
+    "name": "logging.level[org.hibernate.type.descriptor.sql]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.hibernate.type.descriptor.sql]'"
+  },
+  {
+    "name": "logging.level[org.hibernate.type.descriptor.sql]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.hibernate.type.descriptor.sql]'"
+  }
+]}

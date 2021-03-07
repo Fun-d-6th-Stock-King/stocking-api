@@ -1,0 +1,36 @@
+---
+spring:
+  profiles:
+    active: local
+  datasource:
+    hikari:
+      jdbc-url: jdbc:postgresql://arjuna.db.elephantsql.com:5432/kfnzwjso 
+      username: kfnzwjso
+      password: M75X9usBzmjW4xdelDwzolmzT73lnYb1 
+      driver-class-name: org.postgresql.Driver
+      connection-timeout: 30000
+      minimum-idle: 1
+      maximum-pool-size: 3
+      
+hibernate:
+  dialect: org.hibernate.dialect.PostgreSQL9Dialect
+  showSql: true
+  formatSql: true
+  hbm2ddlAuto: none
+
+logging:
+  level[io.swagger.models.parameters.AbstractSerializableParameter]: error
+  level[org.springframework]: INFO
+
+server:
+  port: ${PORT:5000}
+
+---
+spring:
+  profiles: local
+  
+logging:
+  level[org.hibernate.type.descriptor.sql]: INFO
+  
+  
+  
