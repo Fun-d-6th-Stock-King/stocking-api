@@ -2,16 +2,7 @@
 spring:
   profiles:
     active: local
-  datasource:
-    hikari:
-      jdbc-url: jdbc:postgresql://54.180.140.193:5432/stocking 
-      username: stocking
-      password: stocking1234
-      driver-class-name: org.postgresql.Driver
-      connection-timeout: 30000
-      minimum-idle: 1
-      maximum-pool-size: 3
-      
+
 hibernate:
   dialect: org.hibernate.dialect.PostgreSQL9Dialect
   showSql: true
@@ -28,7 +19,48 @@ server:
 ---
 spring:
   profiles: local
+  datasource:
+    hikari:
+      jdbc-url: jdbc:postgresql://54.180.140.193:5432/stocking 
+      username: stocking
+      password: stocking1234
+      driver-class-name: org.postgresql.Driver
+      connection-timeout: 30000
+      minimum-idle: 1
+      maximum-pool-size: 3
   
+logging:
+  level[org.hibernate.type.descriptor.sql]: INFO
+  
+---
+spring:
+  profiles: develop
+  datasource:
+    hikari:
+      jdbc-url: jdbc:postgresql://arjuna.db.elephantsql.com:5432/kfnzwjso 
+      username: kfnzwjso
+      password: M75X9usBzmjW4xdelDwzolmzT73lnYb1 
+      driver-class-name: org.postgresql.Driver
+      connection-timeout: 30000
+      minimum-idle: 1
+      maximum-pool-size: 3
+    
+logging:
+  level[org.hibernate.type.descriptor.sql]: INFO
+
+---
+spring:
+  profiles: production
+  datasource:
+    hikari:
+      jdbc-url: jdbc:postgresql://54.180.140.193:5432/stocking 
+      username: stocking
+      password: stocking1234
+      driver-class-name: org.postgresql.Driver
+      connection-timeout: 30000
+      minimum-idle: 1
+      maximum-pool-size: 3
+    
 logging:
   level[org.hibernate.type.descriptor.sql]: INFO
   
