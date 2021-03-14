@@ -22,7 +22,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2WebMvc;
  * Swagger 2 Configuration
  */
 @Configuration
-@Profile({ "local", "dev" })
+@Profile({ "local", "develop", "production"})
 @EnableSwagger2WebMvc
 public class SwaggerConfig {
 
