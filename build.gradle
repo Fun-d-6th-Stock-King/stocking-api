@@ -34,7 +34,10 @@ dependencies {
   // database
   implementation 'org.springframework.boot:spring-boot-starter-jdbc'
   runtimeOnly 'org.postgresql:postgresql'
-  
+
+  // security
+  implementation 'org.springframework.boot:spring-boot-starter-security'
+
   // test
   testImplementation('org.springframework.boot:spring-boot-starter-test') {
     exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
