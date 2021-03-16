@@ -6,4 +6,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Integer> {
 
+    Account save(Account account);
+
+    boolean existsByUuid(String uuid);
+
+    boolean existsByNickname(String nickname);
+
+    Account findByEmail(String email);
+
+    Account findByUuid(String uuid);
 }

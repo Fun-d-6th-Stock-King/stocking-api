@@ -42,6 +42,15 @@ public class SwaggerConfig {
     return setDocketCommonConfig(docket, "[finance] API", "주식시장 API");
   }
 
+  @Bean
+  public Docket accountApi() {
+    Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("account").select()
+            .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.account")).paths(PathSelectors.any()).build();
+
+    return setDocketCommonConfig(docket, "[account] API", "유저 API");
+  }
+
+
   /**
    * Set Docket Common Config
    *
