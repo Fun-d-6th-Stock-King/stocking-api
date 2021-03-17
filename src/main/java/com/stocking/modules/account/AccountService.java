@@ -6,6 +6,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class AccountService implements UserDetailsService {
@@ -20,6 +22,16 @@ public class AccountService implements UserDetailsService {
                 .build();
 
         accountRepository.save(account);
+    }
+
+    @Transactional(readOnly = true)
+    public Account findByUuid(String uuid) {
+        return accountRepository.findByUuid(uuid);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existByUuid(String uuid) {
+        return accountRepository.existsByUuid(uuid);
     }
 
     @Override
