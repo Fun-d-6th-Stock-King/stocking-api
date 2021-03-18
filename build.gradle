@@ -19,7 +19,7 @@ plugins {
 
 group = 'com.stock'
 version = '1.0'
-sourceCompatibility = '1.8'
+sourceCompatibility = '14'
 
 repositories {
   mavenCentral()
