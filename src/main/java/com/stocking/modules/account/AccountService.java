@@ -25,20 +25,20 @@ public class AccountService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public Account findByUuid(String uuid) {
+    public Account findByUuid(Integer uuid) {
         return accountRepository.findByUuid(uuid);
     }
 
     @Transactional(readOnly = true)
-    public boolean existByUuid(String uuid) {
+    public boolean existByUuid(Integer uuid) {
         return accountRepository.existsByUuid(uuid);
     }
 
     @Override
-    public UserDetails loadUserByUsername(String uuid) throws UsernameNotFoundException {
-        Account account = accountRepository.findByUuid(uuid);
+    public UserDetails loadUserByUsername(String userid) throws UsernameNotFoundException {
+        Account account = accountRepository.findByUserId(userid);
         if (account == null) {
-            throw new UsernameNotFoundException(uuid);
+            throw new UsernameNotFoundException(userid);
         }
         account.setPasswd("{noop}" + account.getPasswd());
         return new UserAccount(account);

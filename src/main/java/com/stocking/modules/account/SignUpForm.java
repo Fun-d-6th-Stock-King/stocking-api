@@ -10,7 +10,7 @@ import javax.validation.constraints.Pattern;
 public class SignUpForm {
 
     @NotBlank
-    private String uuid;
+    private Integer uuid;
 
     private String userId;
 

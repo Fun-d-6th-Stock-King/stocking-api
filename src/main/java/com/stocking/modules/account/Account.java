@@ -23,7 +23,7 @@ public class Account {
 
     @Column(nullable = false, name = "uuid")
     @ApiModelProperty(notes = "uuid")
-    private String uuid;
+    private Integer uuid;
 
     @Column(nullable = false, name = "user_id")
     @ApiModelProperty(notes = "아이디")
@@ -82,7 +82,7 @@ public class Account {
     private boolean iosSns;
 
     @Builder
-    public Account(Integer id, String uuid, String userId, String nickname, String name,
+    public Account(Integer id, Integer uuid, String userId, String nickname, String name,
                    String passwd, String email, Integer likeStockId, String likeStockName,
                    String code, String checkedStock, Date signupDate, boolean checkSns,
                    boolean googleSns, boolean kakaoSns, boolean iosSns) {

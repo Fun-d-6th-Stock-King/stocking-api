@@ -8,11 +8,13 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     Account save(Account account);
 
-    boolean existsByUuid(String uuid);
+    boolean existsByUuid(Integer uuid);
 
     boolean existsByNickname(String nickname);
 
     Account findByEmail(String email);
 
-    Account findByUuid(String uuid);
+    Account findByUuid(Integer uuid);
+
+    Account findByUserId(String userid);
 }
