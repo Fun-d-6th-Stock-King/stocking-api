@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class StockController {
 
-  @Autowired
-  private StockService financeService;
+    @Autowired
+    private StockService financeService;
 
-  @GetMapping
-  public ResponseEntity<Object> getStockList(@Valid StockReq financeReq) {
-    return new ResponseEntity<>(financeService.getStockList(financeReq), HttpStatus.OK);
-  }
+    @GetMapping
+    public ResponseEntity<Object> getStockList(@Valid StockReq financeReq) {
+        return new ResponseEntity<>(financeService.getStockList(financeReq), HttpStatus.OK);
+    }
 }

@@ -10,18 +10,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class StockService {
 
-  @Autowired
-  private StockRepository stockRepository;
+    @Autowired
+    private StockRepository stockRepository;
 
-  /**
-   * 상장기업 목록 조회
-   * 
-   * @param financeReq
-   * @return
-   */
-  public Page<Stock> getStockList(StockReq financeReq) {
-    Sort sort = Sort.by(Direction.fromOptionalString(financeReq.getSortDirection()).orElse(Direction.ASC),
-        financeReq.getSortColumn());
-    return stockRepository.findAll(PageRequest.of(financeReq.getPage(), financeReq.getSize(), sort));
-  }
+    /**
+     * 상장기업 목록 조회
+     * 
+     * @param financeReq
+     * @return
+     */
+    public Page<Stock> getStockList(StockReq financeReq) {
+        Sort sort = Sort.by(Direction.fromOptionalString(financeReq.getSortDirection()).orElse(Direction.ASC),
+                financeReq.getSortColumn());
+        return stockRepository.findAll(PageRequest.of(financeReq.getPage(), financeReq.getSize(), sort));
+    }
 }
