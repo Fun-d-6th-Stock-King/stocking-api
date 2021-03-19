@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,14 +19,23 @@ public class AccountServiceTest {
     @Autowired
     AccountRepository accountRepository;
 
-    @DisplayName("유저 가입 체크")
+    @Autowired
+    AccountService accountService;
+
+    @DisplayName("유저 가입 성공 체크")
+    @Transactional
     @Test
-    public void saveNewAccount_test() {
+    public void saveNewAccountSuccessTest() {
 
         //given
-        accountRepository.save(Account.builder()
-                .uuid(123123)
-                .build());
+        SignUpForm signUpForm = new SignUpForm();
+        signUpForm.setUuid(123123);
+        signUpForm.setUserId("test");
+        signUpForm.setNickname("TESTER");
+        signUpForm.setPasswd("12341234");
+        signUpForm.setEmail("test@test.com");
+        signUpForm.setCheckSns(false);
+        accountService.saveNewAccount(signUpForm);
 
         //when
         List<Account> accountList = accountRepository.findAll();
