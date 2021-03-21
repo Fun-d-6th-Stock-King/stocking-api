@@ -6,15 +6,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.stocking.modules.buyornot.EvaluationRes.Evaluation;
+import com.stocking.modules.buyornot.EvaluationRes.PageInfo;
 
 @Service
 public class BuyOrNotService {
 
-    @Autowired
-    private EvaluateRepository buyOrNotRepository;
+//    @Autowired
+//    private EvaluateRepository buyOrNotRepository;
     
     @Autowired
     private JPAQueryFactory queryFactory;
@@ -23,30 +28,26 @@ public class BuyOrNotService {
      * 전체 평가 목록을 페이징 처리하여 조회합니다.
      * @param accountId
      * @param stockCode
-     * @param sort
+     * @param order
      * @param pageSize
      * @param pageNo
      * @return
      */
-    public List<Evaluation> getEvaluationList(int accountId, String stockCode, int sort, int pageSize, int pageNo) {
+    public EvaluationRes getEvaluationList(int accountId, String stockCode, int order, int pageSize, int pageNo) {
         
+        // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
-        
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         
-        // 평가 ID
-        // 종목명
-        // 종목코드
-        // 장점
-        // 단점
-        // giphy 이미지 id
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
         
-        // 좋아요 갯수
-        // 사용자의 평가에 좋아요 했는지 여부
-
+        // 정렬조건
+        OrderSpecifier<?> orderSpecifier = (order == 1) ? qEvaluate.id.desc() : aliasLikeCount.desc();
+        
         // 종목 평가의 댓글(최근 1개)
         // 종목 평가의 댓글단 날짜
         // 종목 평가의 댓글 총 개수
+        
         List<Evaluation> evaluationList = queryFactory.select(
             Projections.fields(Evaluation.class,
                 qEvaluate.id,
@@ -59,7 +60,7 @@ public class BuyOrNotService {
                     JPAExpressions.select(qEvaluateLike.id.count())
                         .from(qEvaluateLike)
                         .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                    "likeCount"),   // 좋아요 횟수
+                    aliasLikeCount),   // 좋아요 횟수
                 ExpressionUtils.as(
                     JPAExpressions.select(qEvaluateLike.id)
                         .from(qEvaluateLike)
@@ -69,9 +70,14 @@ public class BuyOrNotService {
             )
         ).from(qEvaluate)
         .where(qEvaluate.code.eq(stockCode))
+        .orderBy(orderSpecifier)
+        .offset((pageNo - 1) * pageSize)
+        .limit(pageSize)
         .fetch();
         
-    	return evaluationList;
+        long cnt = queryFactory.selectFrom(qEvaluate).where(qEvaluate.code.eq(stockCode)).fetchCount();
+        
+        return new EvaluationRes(evaluationList, new PageInfo(pageSize, pageNo, cnt));
     }
 
 }

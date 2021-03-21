@@ -26,13 +26,13 @@ public class BuyOrNotController {
     public ResponseEntity<Object> getEvaluationList(
         HttpServletRequest request, 
         @PathVariable String stockCode,
-        @RequestParam(defaultValue = "1") int sort,
+        @RequestParam(defaultValue = "1") int order,
         @RequestParam(defaultValue = "10") int pageSize,
         @RequestParam(defaultValue = "1") int pageNo
     ) {
         int accountId = 2;
         return new ResponseEntity<>(
-            buyOrNotService.getEvaluationList(accountId, stockCode, sort, pageSize, pageNo)
+            buyOrNotService.getEvaluationList(accountId, stockCode, order, pageSize, pageNo)
         , HttpStatus.OK);
     }
 
