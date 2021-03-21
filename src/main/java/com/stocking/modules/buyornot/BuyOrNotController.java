@@ -12,8 +12,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
 @RequestMapping(value = "/api/buyornot")
 @RestController
+@Api(value = "BuyOrNotController", tags = "buyornot")
 public class BuyOrNotController {
 
     @Autowired
@@ -22,17 +27,38 @@ public class BuyOrNotController {
     /**
      * 전체 평가 목록 param - 종목코드, 정렬조건(최신순 1, 인기순 2), uid
      */
+    @ApiOperation(
+        value = "전체 평가 목록", 
+        response = EvaluationRes.class, 
+        tags = "buyornot"
+    )
     @GetMapping("/{stockCode}/evaluate")
     public ResponseEntity<Object> getEvaluationList(
         HttpServletRequest request, 
-        @PathVariable String stockCode,
-        @RequestParam(defaultValue = "1") int order,
-        @RequestParam(defaultValue = "10") int pageSize,
-        @RequestParam(defaultValue = "1") int pageNo
+        @ApiParam(value = "종목코드", defaultValue = "005930", required = true ) @PathVariable String stockCode,
+        @ApiParam(value = "정렬 조건(최신순 1, 인기순 2)", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int order,
+        @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
+        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo
     ) {
         int accountId = 2;
         return new ResponseEntity<>(
             buyOrNotService.getEvaluationList(accountId, stockCode, order, pageSize, pageNo)
+        , HttpStatus.OK);
+    }
+    
+    /**
+     * 오늘의 베스트
+     * 아니면 오늘 좋아요를 가장 많이 받은 평가
+     */
+    @GetMapping("/today-best")
+    public ResponseEntity<Object> todayBest() {
+        
+        // 좋아요를 가장 많이 받은 평가의 id 조회 
+        // 평가 id 로 평가 단건 조회
+        
+        // 출력 - 종목명, 종목코드, 장점, 단점, 등록자 uid
+        return new ResponseEntity<>(
+            buyOrNotService.getTodayBest()
         , HttpStatus.OK);
     }
 
@@ -51,12 +77,16 @@ public class BuyOrNotController {
     }
     
     /**
-     * 오늘의 베스트
+     * 종목 살래말래 평가 하기
+     * param 
+     * - stockCode 
+     * - uid
+     * - 살래, 말래 여부 (1-살래, 2-말래, 3-미선택)
      */
-    @GetMapping("/today-best/")
-    public ResponseEntity<Object> todayBest(String searchWord) {
+    @PostMapping("/{stockCode}")
+    public ResponseEntity<Object> buyOrNot() {
+        // stockCode
         
-        // 출력 - 종목명, 종목코드, 장점, 단점, 등록자 uid
         return new ResponseEntity<>(
             null
         , HttpStatus.OK);
@@ -108,23 +138,7 @@ public class BuyOrNotController {
             null
         , HttpStatus.OK);
     }
-    
-    /**
-     * 종목 살래말래 평가 하기
-     * param 
-     * - stockCode 
-     * - uid
-     * - 살래, 말래 여부 (1-살래, 2-말래, 3-미선택)
-     */
-    @PostMapping("/{stockCode}")
-    public ResponseEntity<Object> buyOrNot() {
-        // stockCode
-        
-        return new ResponseEntity<>(
-            null
-        , HttpStatus.OK);
-    }
-    
+
     /**
      * 종목별 일별 시세 
      */

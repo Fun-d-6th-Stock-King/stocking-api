@@ -26,6 +26,7 @@ public class EvaluationRes {
         private String pros;        // 장점
         private String cons;        // 단점
         private String giphyImgId;  // giphy 이미지
+        private String uuid;
         private long likeCount;     // 좋아요 개수
         private boolean userlike;
         

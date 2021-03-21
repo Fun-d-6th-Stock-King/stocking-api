@@ -7,9 +7,12 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import com.stocking.infra.common.BaseEntity;
+
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -17,7 +20,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class EvaluateComment {
+@EqualsAndHashCode(callSuper = false)
+public class EvaluateComment extends BaseEntity {
 
     @Id
     @Column(name = "id")
@@ -29,8 +33,8 @@ public class EvaluateComment {
     @ApiModelProperty(notes = "평가 ID", position = 2)
     private int evaluateId;
 
-    @Column(name = "account_id")
-    @ApiModelProperty(notes = "계정 ID", position = 3)
-    private int accountId;
+    @Column(name = "comment")
+    @ApiModelProperty(notes = "코멘트", position = 4)
+    private String comment;
 
 }
