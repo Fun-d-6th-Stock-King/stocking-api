@@ -1,16 +1,12 @@
 package com.stocking.modules.account;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class AccountService implements UserDetailsService {
+public class AccountService {
 
     private final AccountRepository accountRepository;
 
@@ -18,6 +14,7 @@ public class AccountService implements UserDetailsService {
 
         Account account = Account.builder()
                 .uuid(signUpForm.getUuid())
+                .email(signUpForm.getEmail())
                 .nickname(signUpForm.getNickname())
                 .build();
 
@@ -25,22 +22,13 @@ public class AccountService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public Account findByUuid(Integer uuid) {
+    public Account findByUuid(Long uuid) {
         return accountRepository.findByUuid(uuid);
     }
 
     @Transactional(readOnly = true)
-    public boolean existByUuid(Integer uuid) {
+    public boolean existByUuid(Long uuid) {
         return accountRepository.existsByUuid(uuid);
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String userid) throws UsernameNotFoundException {
-        Account account = accountRepository.findByUserId(userid);
-        if (account == null) {
-            throw new UsernameNotFoundException(userid);
-        }
-        account.setPasswd("{noop}" + account.getPasswd());
-        return new UserAccount(account);
-    }
 }

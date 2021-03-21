@@ -17,7 +17,7 @@ public class AccountController {
     private final AccountService accountService;
 
     @GetMapping("/login")
-    public ResponseEntity<Object> login(Integer uuid, Error error) {
+    public ResponseEntity<Object> login(Long uuid, Error error) {
         Account account = accountService.findByUuid(uuid);
         if (account == null) {
             return null;

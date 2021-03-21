@@ -29,10 +29,8 @@ public class AccountServiceTest {
 
         //given
         SignUpForm signUpForm = new SignUpForm();
-        signUpForm.setUuid(123123);
-        signUpForm.setUserId("test");
+        signUpForm.setUuid(Long.valueOf(123123));
         signUpForm.setNickname("TESTER");
-        signUpForm.setPasswd("12341234");
         signUpForm.setEmail("test@test.com");
         signUpForm.setCheckSns(false);
         accountService.saveNewAccount(signUpForm);
