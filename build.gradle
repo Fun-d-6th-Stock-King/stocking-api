@@ -38,6 +38,9 @@ dependencies {
   // security
   implementation 'org.springframework.boot:spring-boot-starter-security'
 
+  // oauth
+  implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
   // test
   testImplementation('org.springframework.boot:spring-boot-starter-test') {
     exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'

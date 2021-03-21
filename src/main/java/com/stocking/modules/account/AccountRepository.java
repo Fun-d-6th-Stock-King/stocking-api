@@ -3,8 +3,10 @@ package com.stocking.modules.account;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
-public interface AccountRepository extends JpaRepository<Account, Integer> {
+public interface AccountRepository extends JpaRepository<Account, Long> {
 
     Account save(Account account);
 
@@ -12,7 +14,11 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     boolean existsByNickname(String nickname);
 
-    Account findByEmail(String email);
+    boolean existsByEmail(String email);
+
+    Optional<Account> findById(Long id);
+
+    Optional<Account> findByEmail(String email);
 
     Account findByUuid(Long uuid);
 }

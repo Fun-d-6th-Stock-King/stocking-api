@@ -1,4 +1,4 @@
-package com.stocking.infra.config.auth;
+package com.stocking.infra.config.auth.dto;
 
 import com.stocking.modules.account.Account;
 import com.stocking.modules.account.Role;
@@ -14,14 +14,16 @@ public class OAuthAttributes {
     private Long id;
     private Long uuid;
     private String email;
+    private String picture;
 
     @Builder
-    public OAuthAttributes(Map<String, Object> attributes, String nameAttributeKey, Long id, Long uuid, String email) {
+    public OAuthAttributes(Map<String, Object> attributes, String nameAttributeKey, Long id, Long uuid, String email, String picture) {
         this.attributes = attributes;
         this.nameAttributeKey = nameAttributeKey;
         this.id = id;
         this.uuid = uuid;
         this.email = email;
+        this.picture = picture;
     }
 
     public static OAuthAttributes of(String registrationId, String userNameAttributeName, Map<String, Object> attributes) {
