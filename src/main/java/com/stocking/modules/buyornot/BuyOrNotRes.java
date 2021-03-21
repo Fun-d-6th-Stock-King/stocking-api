@@ -11,29 +11,25 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class EvaluationRes {
+public class BuyOrNotRes {
 
-    private List<Evaluation> evaluationList;
+    private List<SimpleEvaluation> evaluationList;
     
     private PageInfo pageInfo;
     
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Evaluation {
+    public static class SimpleEvaluation {
         
         private int id;
         private String code;        // 종목코드
         private String company;     // 회사명
         private String pros;        // 장점
         private String cons;        // 단점
-        private String giphyImgId;  // giphy 이미지
         private String uuid;        // 등록자 uid
         private long likeCount;     // 좋아요 개수
-        private boolean userlike;   // 사용자가 좋아요 했는지 여부
         
-        // recentComment 객체 하나 있어야함.
-        // comment 갯수
     }
 
 }

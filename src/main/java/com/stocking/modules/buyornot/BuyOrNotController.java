@@ -1,5 +1,7 @@
 package com.stocking.modules.buyornot;
 
+import java.io.IOException;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,29 +14,47 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.stocking.modules.buyornot.BuyOrNotRes.SimpleEvaluation;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import yahoofinance.Stock;
+import yahoofinance.YahooFinance;
 
 @RequestMapping(value = "/api/buyornot")
 @RestController
-@Api(value = "BuyOrNotController", tags = "buyornot")
+@Api(value = "BuyOrNotController", tags = "살까말까")
 public class BuyOrNotController {
 
     @Autowired
     private BuyOrNotService buyOrNotService;
-
-    /**
-     * 전체 평가 목록 param - 종목코드, 정렬조건(최신순 1, 인기순 2), uid
-     */
+    
     @ApiOperation(
-        value = "전체 평가 목록", 
-        response = EvaluationRes.class, 
-        tags = "buyornot"
+        value = "전체 평가 목록",
+        notes = "살까 말까 메인 장단점 평가 목록 / param - 검색어, 정렬순서",
+        response = EvaluationRes.class
+    )
+    @GetMapping
+    public ResponseEntity<Object> getBuyOrNotList(
+        @ApiParam(value = "정렬 조건", defaultValue = "LATELY") @RequestParam(defaultValue = "LATELY") BuyOrNotOrder order,
+        @ApiParam(value = "페이지 크기", defaultValue = "10") @RequestParam(defaultValue = "10") int pageSize,
+        @ApiParam(value = "페이지 번호", defaultValue = "1") @RequestParam(defaultValue = "1") int pageNo,
+        @ApiParam(value = "검색어", required = false) @RequestParam(required = false) String searchWord
+    ) {
+        
+        return new ResponseEntity<>(
+            buyOrNotService.getBuyOrNotList(order, pageSize, pageNo, searchWord)
+        , HttpStatus.OK);
+    }
+
+    @ApiOperation(
+        value = "종목별 전체 평가 목록", 
+        notes = "종목별 전체 평가 목록 param - 종목코드, 정렬조건(최신순 1, 인기순 2), uid",
+        response = EvaluationRes.class
     )
     @GetMapping("/{stockCode}/evaluate")
     public ResponseEntity<Object> getEvaluationList(
-        HttpServletRequest request, 
         @ApiParam(value = "종목코드", defaultValue = "005930", required = true ) @PathVariable String stockCode,
         @ApiParam(value = "정렬 조건(최신순 1, 인기순 2)", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int order,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
@@ -46,80 +66,57 @@ public class BuyOrNotController {
         , HttpStatus.OK);
     }
     
-    /**
-     * 오늘의 베스트
-     * 아니면 오늘 좋아요를 가장 많이 받은 평가
-     */
+    @ApiOperation(
+        value = "오늘의 베스트",
+        notes = "오늘 좋아요를 가장 많이 받은 평가",
+        response = SimpleEvaluation.class
+    )
     @GetMapping("/today-best")
     public ResponseEntity<Object> todayBest() {
         
-        // 좋아요를 가장 많이 받은 평가의 id 조회 
-        // 평가 id 로 평가 단건 조회
-        
-        // 출력 - 종목명, 종목코드, 장점, 단점, 등록자 uid
         return new ResponseEntity<>(
             buyOrNotService.getTodayBest()
         , HttpStatus.OK);
     }
 
-    /**
-     * 살까 말까 메인 장단점 평가 목록
-     * param - 검색어, 정렬순서
-     */
-    @GetMapping
-    public ResponseEntity<Object> getBuyOrNotList(String searchWord,
-            String sort) {
-        
-        // 출력 - 종목명, 종목코드, 장점, 단점, 등록자 uid
-        return new ResponseEntity<>(
-            null
-        , HttpStatus.OK);
-    }
-    
-    /**
-     * 종목 살래말래 평가 하기
-     * param 
-     * - stockCode 
-     * - uid
-     * - 살래, 말래 여부 (1-살래, 2-말래, 3-미선택)
-     */
+    @ApiOperation(
+        value = "종목 살래말래 평가 하기",
+        notes = "종목 살래말래 평가 하기",
+        response = Integer.class
+    )
     @PostMapping("/{stockCode}")
-    public ResponseEntity<Object> buyOrNot() {
-        // stockCode
+    public ResponseEntity<Object> buyOrNot(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell
+    ) {
+        int accountId = 2;
         
         return new ResponseEntity<>(
-            null
+            buyOrNotService.saveBuySell(stockCode, accountId, buySell)
         , HttpStatus.OK);
     }
     
-    /**
-     * 살까말까 상세(종목 상세)
-     * uid 일단 하드코딩으로 넣을 예정, 
-     * header 에 있는 uid 가져오는 intercepter 만들어야할듯? 
-     * param - 종목코드, uid
-     */
+    @ApiOperation(
+        value = "살까말까 상세",
+        notes = "살까말까 상세, param - 종목코드, uid, header 에 있는 uid 가져오는 intercepter 만들어야할듯?",
+        response = EvaluateBuySellRes.class
+    )
     @GetMapping("/{stockCode}")
-    public ResponseEntity<Object> getStockDetail() {
+    public ResponseEntity<Object> getBuyOrNotCount(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
+    ) {
+        int accountId = 2;
         
-//        * 현재 시세
-//        * 등락률
-//        * 최근 10년간 최고가
-//        * 최고가 일자
-//        * 최근 10년간 최저가
-//        * 최저가 일자
-//        * 살래 갯수
-//        * 말래 갯수
-    	
-//        * 사용자의 선택여부(1-살래, 2-말래, 3-미선택)
         return new ResponseEntity<>(
-            null
+            buyOrNotService.getBuySellCount(stockCode, accountId)
         , HttpStatus.OK);
     }
     
-    /**
-     * best 평가 목록
-     * param - 기간, uid
-     */
+    @ApiOperation(
+        value = "종목별 best 평가 목록",
+        notes = "기간(오늘,7일,1개월,6개월,1년,전체기간) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
+        response = EvaluateBuySellRes.class
+    )
     @GetMapping("/{stockCode}/best")
     public ResponseEntity<Object> getBestList() {
         // 평가 ID
@@ -139,12 +136,26 @@ public class BuyOrNotController {
         , HttpStatus.OK);
     }
 
-    /**
-     * 종목별 일별 시세 
-     */
+    @ApiOperation(
+        value = "종목별 일별 시세 ",
+        notes = "기간(오늘,7일,1개월,6개월,1년,전체기간) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
+        response = EvaluateBuySellRes.class
+    )
     @PostMapping("/{stockCode}/{beforeDt}/{afterDt}")
     public ResponseEntity<Object> getDailyPrice(
-            ) {
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,
+        @ApiParam(value = "조회종료일자", defaultValue = "2021-12-31") @PathVariable String afterDt
+    ) throws IOException {
+//      * 현재 시세
+//      * 등락률
+//      * 최근 10년간 최고가
+//      * 최고가 일자
+//      * 최근 10년간 최저가
+//      * 최저가 일자
+        
+        Stock stock = YahooFinance.get(stockCode, true);
+        
         // 일자별 시세 목록
         return new ResponseEntity<>(
             null

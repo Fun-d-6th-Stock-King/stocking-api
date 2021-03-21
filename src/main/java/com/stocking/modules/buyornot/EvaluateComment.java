@@ -5,9 +5,12 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
 import com.stocking.infra.common.BaseEntity;
+import com.stocking.modules.account.Account;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -36,5 +39,9 @@ public class EvaluateComment extends BaseEntity {
     @Column(name = "comment")
     @ApiModelProperty(notes = "코멘트", position = 4)
     private String comment;
+    
+    @OneToOne
+    @JoinColumn(name = "created_id", insertable = false, updatable = false)
+    private Account account;
 
 }
