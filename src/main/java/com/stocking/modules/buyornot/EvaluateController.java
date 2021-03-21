@@ -76,7 +76,7 @@ public class EvaluateController {
      * 평가에 대한 코멘트 등록
      * param - evaluateId, uid, 코멘트 내용
      */
-    @GetMapping("/{evaluateId}/comment")
+    @PostMapping("/{evaluateId}/comment")
     public ResponseEntity<Object> comment(
             ) {
         // 출력 - commentId
