@@ -1,7 +1,5 @@
 package com.stocking.modules.buyornot;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -13,11 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EvaluationDetailRes {
     
-    private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
-
     private Evaluation evaluation;
     
-    private List<CommentVO> commentList;
+    private List<Comment> commentList;
     
     @Data
     @AllArgsConstructor
@@ -36,20 +32,4 @@ public class EvaluationDetailRes {
         
     }
     
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class CommentVO {
-        
-        private int id;
-        private String comment;         // 코멘트
-        private String uid;             // 작성자 uid
-        private LocalDateTime createdDate;       // 작성일시
-        
-        public String getCreatedDate() {
-            
-            return this.createdDate.format(DateTimeFormatter.ofPattern(FORMAT));
-        }
-    }
-
 }

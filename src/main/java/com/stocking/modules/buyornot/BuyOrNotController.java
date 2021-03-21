@@ -1,8 +1,7 @@
 package com.stocking.modules.buyornot;
 
 import java.io.IOException;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +20,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
+import yahoofinance.histquotes.HistoricalQuote;
 
 @RequestMapping(value = "/api/buyornot")
 @RestController
@@ -118,7 +118,9 @@ public class BuyOrNotController {
         response = EvaluateBuySellRes.class
     )
     @GetMapping("/{stockCode}/best")
-    public ResponseEntity<Object> getBestList() {
+    public ResponseEntity<Object> getBestList(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
+    ) {
         // 평가 ID
         // 종목명
         // 종목코드
@@ -137,12 +139,12 @@ public class BuyOrNotController {
     }
 
     @ApiOperation(
-        value = "종목별 일별 시세 ",
+        value = "종목별 현재 시세, 등락률, 일별 시세 등",
         notes = "기간(오늘,7일,1개월,6개월,1년,전체기간) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
         response = EvaluateBuySellRes.class
     )
     @PostMapping("/{stockCode}/{beforeDt}/{afterDt}")
-    public ResponseEntity<Object> getDailyPrice(
+    public ResponseEntity<Object> getStockPrice(
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
         @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,
         @ApiParam(value = "조회종료일자", defaultValue = "2021-12-31") @PathVariable String afterDt
@@ -155,6 +157,12 @@ public class BuyOrNotController {
 //      * 최저가 일자
         
         Stock stock = YahooFinance.get(stockCode, true);
+        stock.getQuote().getPrice();            // 현재 시세
+        stock.getQuote().getChangeInPercent();  // 등락률
+        
+        List<HistoricalQuote> list = stock.getHistory();
+        
+//        list.get(0).get
         
         // 일자별 시세 목록
         return new ResponseEntity<>(

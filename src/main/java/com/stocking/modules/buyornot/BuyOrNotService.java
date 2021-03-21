@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -106,15 +107,12 @@ public class BuyOrNotService {
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QAccount qAccount = QAccount.account;
+        QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
         
         // 정렬조건
         OrderSpecifier<?> orderSpecifier = (order == 1) ? qEvaluate.id.desc() : aliasLikeCount.desc();
-        
-        // 종목 평가의 댓글(최근 1개)
-        // 종목 평가의 댓글단 날짜
-        // 종목 평가의 댓글 총 개수
         
         List<Evaluation> evaluationList = queryFactory.select(
             Projections.fields(Evaluation.class,
@@ -144,6 +142,34 @@ public class BuyOrNotService {
         .offset((pageNo - 1) * pageSize)
         .limit(pageSize)
         .fetch();
+        
+        evaluationList = evaluationList.stream().map(vo -> {
+            long commentCount = queryFactory
+                .selectFrom(qEvaluateComment)
+                .where(qEvaluateComment.evaluateId.eq(vo.getId()))
+                .fetchCount();
+            vo.setCommentCount(commentCount);
+            
+            if(commentCount > 0) {
+                Comment comment = queryFactory
+                    .select(
+                        Projections.fields(Comment.class,
+                            qEvaluateComment.id,
+                            qEvaluateComment.comment,
+                            qEvaluateComment.createdDate,
+                            qAccount.uuid
+                            )
+                        )
+                    .from(qEvaluateComment)
+                    .innerJoin(qAccount).on(qEvaluateComment.createdId.eq(qAccount.id))
+                    .where(qEvaluateComment.evaluateId.eq(vo.getId()))
+                    .orderBy(qEvaluateComment.createdDate.desc())
+                    .limit(1)
+                    .fetchOne();
+                vo.setRecentComment(comment);
+            }
+            return vo;
+        }).collect(Collectors.toList());
         
         // 전체 건수
         long cnt = queryFactory.selectFrom(qEvaluate).where(qEvaluate.code.eq(stockCode)).fetchCount();
@@ -233,6 +259,12 @@ public class BuyOrNotService {
         return resultMap;
     }
     
+    /**
+     * 종목별 살래, 말래 개수, 사용자의 해당종목 살래/말래 선택값
+     * @param stockCode
+     * @param accountId
+     * @return
+     */
     public EvaluateBuySellRes getBuySellCount(String stockCode, int accountId){
         long buyCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
         long sellCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);

@@ -14,7 +14,6 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.modules.account.QAccount;
-import com.stocking.modules.buyornot.EvaluationDetailRes.CommentVO;
 import com.stocking.modules.buyornot.EvaluationDetailRes.Evaluation;
 import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
@@ -149,8 +148,8 @@ public class EvaluateService {
             .where(qEvaluate.id.eq(evaluateId))
             .fetchOne();
         
-        List<CommentVO> commentList = queryFactory.select(
-                Projections.fields(CommentVO.class,
+        List<Comment> commentList = queryFactory.select(
+                Projections.fields(Comment.class,
                     qEvaluateComment.id,
                     qEvaluateComment.comment,
                     qEvaluateComment.createdDate,

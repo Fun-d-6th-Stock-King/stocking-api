@@ -32,8 +32,9 @@ public class EvaluationRes {
         private long likeCount;     // 좋아요 개수
         private boolean userlike;   // 사용자가 좋아요 했는지 여부
         
-        // recentComment 객체 하나 있어야함.
-        // comment 갯수
+        private Comment recentComment;  // comment 최근
+        private long commentCount;  // comment 갯수
+        
     }
 
 }
