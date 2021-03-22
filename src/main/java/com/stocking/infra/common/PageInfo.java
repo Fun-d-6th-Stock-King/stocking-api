@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class PageInfo {
     
-    private int pageSize;
-    private int pageNo;
+    private long pageSize;
+    private long pageNo;
     private long count;
 }

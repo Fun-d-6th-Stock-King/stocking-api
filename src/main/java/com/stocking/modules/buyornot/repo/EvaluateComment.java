@@ -1,4 +1,4 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.repo;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,11 +30,11 @@ public class EvaluateComment extends BaseEntity {
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @ApiModelProperty(notes = "id", position = 1)
-    private int id;
+    private long id;
 
     @Column(name = "evaluate_id")
     @ApiModelProperty(notes = "평가 ID", position = 2)
-    private int evaluateId;
+    private long evaluateId;
 
     @Column(name = "comment")
     @ApiModelProperty(notes = "코멘트", position = 4)

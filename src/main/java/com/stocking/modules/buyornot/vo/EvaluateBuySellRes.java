@@ -1,4 +1,6 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.vo;
+
+import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;

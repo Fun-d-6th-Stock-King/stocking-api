@@ -1,4 +1,4 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.vo;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,7 +14,7 @@ public class Comment {
     
     private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
     
-    private int id;
+    private long id;
     private String comment;         // 코멘트
     private String uuid;             // 작성자 uid
     private LocalDateTime createdDate;       // 작성일시

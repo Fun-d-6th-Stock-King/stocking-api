@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.querydsl.core.types.ExpressionUtils;
@@ -14,27 +13,37 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.modules.account.QAccount;
-import com.stocking.modules.buyornot.EvaluationDetailRes.Evaluation;
+import com.stocking.modules.buyornot.repo.Evaluate;
+import com.stocking.modules.buyornot.repo.EvaluateComment;
+import com.stocking.modules.buyornot.repo.EvaluateCommentRepository;
+import com.stocking.modules.buyornot.repo.EvaluateLike;
+import com.stocking.modules.buyornot.repo.EvaluateLikeRepository;
+import com.stocking.modules.buyornot.repo.EvaluateRepository;
+import com.stocking.modules.buyornot.repo.QEvaluate;
+import com.stocking.modules.buyornot.repo.QEvaluateComment;
+import com.stocking.modules.buyornot.repo.QEvaluateLike;
+import com.stocking.modules.buyornot.vo.Comment;
+import com.stocking.modules.buyornot.vo.EvaluateReq;
+import com.stocking.modules.buyornot.vo.EvaluationDetailRes;
+import com.stocking.modules.buyornot.vo.EvaluationDetailRes.Evaluation;
 import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class EvaluateService {
     
-    @Autowired
-    private EvaluateRepository evaluateRepository;
+    private final EvaluateRepository evaluateRepository;
     
-    @Autowired
-    private EvaluateCommentRepository evaluateCommentRepository;
+    private final EvaluateCommentRepository evaluateCommentRepository;
     
-    @Autowired
-    private EvaluateLikeRepository evaluateLikeRepository;
+    private final EvaluateLikeRepository evaluateLikeRepository;
     
-    @Autowired
-    private StockRepository stockRepository;
+    private final StockRepository stockRepository;
     
-    @Autowired
-    private JPAQueryFactory queryFactory;
+    private final JPAQueryFactory queryFactory;
     
     /**
      * 좋아요 저장 / 삭제
@@ -42,7 +51,7 @@ public class EvaluateService {
      * @param accountId
      * @return
      */
-    public Map<String, Object> saveLike(int evaluateId, int accountId) {
+    public Map<String, Object> saveLike(int evaluateId, long accountId) {
         EvaluateLike evaluateLike = new EvaluateLike();
         evaluateLike.setAccountId(accountId);
         evaluateLike.setEvaluateId(evaluateId);
@@ -72,7 +81,7 @@ public class EvaluateService {
      * @return
      * @throws Exception
      */
-    public Evaluate saveEvaluate(EvaluateReq evaluateReq, int accountId) throws Exception {
+    public Evaluate saveEvaluate(EvaluateReq evaluateReq, long accountId) throws Exception {
         Evaluate evaluate = new Evaluate();
         
         Stock stock = stockRepository.findByCode(evaluateReq.getCode())
@@ -95,7 +104,7 @@ public class EvaluateService {
      * @param accountId
      * @return
      */
-    public EvaluateComment saveComment(int evaluateId, String comment, int accountId) {
+    public EvaluateComment saveComment(int evaluateId, String comment, long accountId) {
         
         EvaluateComment evaluateComment = new EvaluateComment();
         evaluateComment.setEvaluateId(evaluateId);
@@ -112,7 +121,7 @@ public class EvaluateService {
      * @param accountId
      * @return
      */
-    public EvaluationDetailRes getDetail(int evaluateId, int accountId) {
+    public EvaluationDetailRes getDetail(long evaluateId, long accountId) {
         
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;

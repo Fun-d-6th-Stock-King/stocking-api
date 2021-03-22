@@ -1,4 +1,4 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.repo;
 
 import java.io.Serializable;
 
@@ -29,7 +29,7 @@ public class Evaluate extends BaseEntity implements Serializable {
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @ApiModelProperty(notes = "id", position = 1)
-    private int id;
+    private long id;
 
     @Column(name = "company")
     @ApiModelProperty(notes = "회사명", position = 2)

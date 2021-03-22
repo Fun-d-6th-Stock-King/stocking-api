@@ -18,14 +18,14 @@ import lombok.Data;
 public abstract class BaseEntity {
 
     @Column(name = "created_id")
-    private int createdId;
+    private long createdId;
 
     @CreatedDate
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
     @Column(name = "updated_id")
-    private int updatedId;
+    private long updatedId;
 
     @LastModifiedDate
     @Column(name = "updated_date")

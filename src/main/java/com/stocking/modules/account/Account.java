@@ -19,7 +19,7 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, name = "id")
     @ApiModelProperty(notes = "id")
-    private Integer id;
+    private Long id;
 
     @Column(nullable = false, name = "uuid")
     @ApiModelProperty(notes = "uuid")
@@ -82,7 +82,7 @@ public class Account {
     private boolean iosSns;
 
     @Builder
-    public Account(Integer id, String uuid, String userId, String nickname, String name,
+    public Account(Long id, String uuid, String userId, String nickname, String name,
                    String passwd, String email, Integer likeStockId, String likeStockName,
                    String code, String checkedStock, Date signupDate, boolean checkSns,
                    boolean googleSns, boolean kakaoSns, boolean iosSns) {

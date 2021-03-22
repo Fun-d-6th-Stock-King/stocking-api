@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.querydsl.core.BooleanBuilder;
@@ -21,23 +20,31 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.PageInfo;
 import com.stocking.modules.account.QAccount;
-import com.stocking.modules.buyornot.BuyOrNotRes.SimpleEvaluation;
-import com.stocking.modules.buyornot.EvaluationRes.Evaluation;
+import com.stocking.modules.buyornot.repo.EvaluateBuySell;
+import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
+import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes;
+import com.stocking.modules.buyornot.vo.Comment;
+import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
+import com.stocking.modules.buyornot.vo.EvaluationRes;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
+import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
+import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
+import com.stocking.modules.buyornot.repo.QEvaluate;
+import com.stocking.modules.buyornot.repo.QEvaluateComment;
+import com.stocking.modules.buyornot.repo.QEvaluateLike;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class BuyOrNotService {
 
-//    @Autowired
-//    private EvaluateRepository buyOrNotRepository;
+    private final EvaluateBuySellRepository evaluateBuySellRepository;
     
-    @Autowired
-    private EvaluateLikeRepository evaluateLikeRepository;
+    private final JPAQueryFactory queryFactory;
     
-    @Autowired
-    private EvaluateBuySellRepository evaluateBuySellRepository;
-    
-    @Autowired
-    private JPAQueryFactory queryFactory;
+    private static final String LIKECOUNT = "likeCount";
     
     /**
      * 전체 평가 목록 조회
@@ -47,13 +54,13 @@ public class BuyOrNotService {
      * @param searchWord
      * @return
      */
-    public BuyOrNotRes getBuyOrNotList(BuyOrNotOrder order, int pageSize, int pageNo, String searchWord) {
+    public BuyOrNotRes getBuyOrNotList(BuyOrNotOrder order, long pageSize, long pageNo, String searchWord) {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QAccount qAccount = QAccount.account;
         
-        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         BooleanBuilder builder = new BooleanBuilder();
         
@@ -101,7 +108,7 @@ public class BuyOrNotService {
      * @param pageNo
      * @return
      */
-    public EvaluationRes getEvaluationList(int accountId, String stockCode, int order, int pageSize, int pageNo) {
+    public EvaluationRes getEvaluationList(long accountId, String stockCode, int order, long pageSize, long pageNo) {
         
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
@@ -109,7 +116,7 @@ public class BuyOrNotService {
         QAccount qAccount = QAccount.account;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
-        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         // 정렬조건
         OrderSpecifier<?> orderSpecifier = (order == 1) ? qEvaluate.id.desc() : aliasLikeCount.desc();
@@ -189,7 +196,7 @@ public class BuyOrNotService {
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QAccount qAccount = QAccount.account;
         
-        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         NumberPath<Long> groupCount = Expressions.numberPath(Long.class, "groupCount");
         
@@ -203,27 +210,29 @@ public class BuyOrNotService {
             .orderBy(groupCount.desc())
             .limit(1)
             .fetchOne();
-        
-        int evaluateId = tuple.get(qEvaluateLike.evaluateId);
-        
-        return queryFactory.select(
-              Projections.fields(SimpleEvaluation.class,
-                  qEvaluate.id,
-                  qEvaluate.code,
-                  qEvaluate.company,
-                  qEvaluate.pros,
-                  qEvaluate.cons,
-                  qAccount.uuid,
-                  ExpressionUtils.as(
-                      JPAExpressions.select(qEvaluateLike.id.count())
-                          .from(qEvaluateLike)
-                          .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                      aliasLikeCount)   // 좋아요 횟수
-              )
-          ).from(qEvaluate)
-          .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
-          .where(qEvaluate.id.eq(evaluateId))
-          .fetchOne();
+        if(tuple != null) {
+            Long evaluateId = tuple.get(qEvaluateLike.evaluateId);
+            return queryFactory.select(
+                  Projections.fields(SimpleEvaluation.class,
+                      qEvaluate.id,
+                      qEvaluate.code,
+                      qEvaluate.company,
+                      qEvaluate.pros,
+                      qEvaluate.cons,
+                      qAccount.uuid,
+                      ExpressionUtils.as(
+                          JPAExpressions.select(qEvaluateLike.id.count())
+                              .from(qEvaluateLike)
+                              .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
+                          aliasLikeCount)   // 좋아요 횟수
+                  )
+              ).from(qEvaluate)
+              .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
+              .where(qEvaluate.id.eq(evaluateId))
+              .fetchOne();
+        }else { // 오늘 좋아요를 받은 평가 없는 경우
+            return null;
+        }
     }
     
     /**
@@ -233,7 +242,7 @@ public class BuyOrNotService {
      * @param buyOrNot
      * @return
      */
-    public Map<String, Object> saveBuySell(String stockCode, int accountId, BuySell buySell) {
+    public Map<String, Object> saveBuySell(String stockCode, long accountId, BuySell buySell) {
         Map<String, Object> resultMap = new HashMap<>();
         
         if(buySell != null) {
@@ -251,9 +260,7 @@ public class BuyOrNotService {
             });
         }else {
             evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId)
-                .ifPresent(vo -> {
-                    evaluateBuySellRepository.delete(vo);
-                });
+                    .ifPresent(evaluateBuySellRepository::delete);
         }
         
         return resultMap;
@@ -265,7 +272,7 @@ public class BuyOrNotService {
      * @param accountId
      * @return
      */
-    public EvaluateBuySellRes getBuySellCount(String stockCode, int accountId){
+    public EvaluateBuySellRes getBuySellCount(String stockCode, long accountId){
         long buyCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
         long sellCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
         

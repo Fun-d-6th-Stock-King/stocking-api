@@ -10,10 +10,10 @@ public abstract class PageParam {
 
     @ApiParam(value = "페이지 번호", defaultValue = "0", required = true)
     @Min(value = 0, message = "페이지 번호는  0보다 커야합니다.")
-    private int page;
+    private Long page;
 
     @ApiParam(value = "페이지 크기", defaultValue = "10", required = true)
     @Min(value = 10, message = "페이지 사이즈는 10보다 커야합니다.")
-    private int size;
+    private Long size;
 
 }

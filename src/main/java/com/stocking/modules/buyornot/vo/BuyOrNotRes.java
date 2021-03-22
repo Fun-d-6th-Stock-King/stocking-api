@@ -1,4 +1,4 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.vo;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class BuyOrNotRes {
     @NoArgsConstructor
     public static class SimpleEvaluation {
         
-        private int id;
+        private long id;
         private String code;        // 종목코드
         private String company;     // 회사명
         private String pros;        // 장점
