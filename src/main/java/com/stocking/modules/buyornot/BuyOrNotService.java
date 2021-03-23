@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -22,17 +23,17 @@ import com.stocking.infra.common.PageInfo;
 import com.stocking.modules.account.QAccount;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
-import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
-import com.stocking.modules.buyornot.vo.BuyOrNotRes;
-import com.stocking.modules.buyornot.vo.Comment;
-import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
-import com.stocking.modules.buyornot.vo.EvaluationRes;
-import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
-import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
 import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
 import com.stocking.modules.buyornot.repo.QEvaluate;
 import com.stocking.modules.buyornot.repo.QEvaluateComment;
 import com.stocking.modules.buyornot.repo.QEvaluateLike;
+import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
+import com.stocking.modules.buyornot.vo.Comment;
+import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
+import com.stocking.modules.buyornot.vo.EvaluationRes;
+import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
 
 import lombok.RequiredArgsConstructor;
 
@@ -63,15 +64,13 @@ public class BuyOrNotService {
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         BooleanBuilder builder = new BooleanBuilder();
-        
-        if(searchWord != null) {
-            builder.and(qEvaluate.company.contains(searchWord));
-        } 
+        Optional.ofNullable(searchWord)
+            .ifPresent(vo -> builder.and(qEvaluate.company.contains(vo)));
         
         // 정렬조건
         OrderSpecifier<?> orderSpecifier = (order == BuyOrNotOrder.LATELY) ? qEvaluate.id.desc() : aliasLikeCount.desc();
         
-        List<SimpleEvaluation> list = queryFactory.select(
+        List<SimpleEvaluation> simpleEvaluationList = queryFactory.select(
                 Projections.fields(SimpleEvaluation.class,
                     qEvaluate.id,
                     qEvaluate.code,
@@ -94,9 +93,18 @@ public class BuyOrNotService {
             .fetch();
         
         // 전체 건수
-        long cnt = queryFactory.selectFrom(qEvaluate).where(builder).fetchCount();
+        long count = queryFactory.selectFrom(qEvaluate).where(builder).fetchCount();
         
-        return new BuyOrNotRes(list, new PageInfo(pageSize, pageNo, cnt));
+        return BuyOrNotRes.builder()
+            .simpleEvaluationList(simpleEvaluationList)
+            .pageInfo(
+                PageInfo.builder()
+                    .pageSize(pageSize)
+                    .pageNo(pageNo)
+                    .count(count)
+                    .build()
+            )
+            .build();
     }
     
     /**
@@ -179,9 +187,18 @@ public class BuyOrNotService {
         }).collect(Collectors.toList());
         
         // 전체 건수
-        long cnt = queryFactory.selectFrom(qEvaluate).where(qEvaluate.code.eq(stockCode)).fetchCount();
+        long count = queryFactory.selectFrom(qEvaluate).where(qEvaluate.code.eq(stockCode)).fetchCount();
         
-        return new EvaluationRes(evaluationList, new PageInfo(pageSize, pageNo, cnt));
+        return EvaluationRes.builder()
+            .evaluationList(evaluationList)
+            .pageInfo(
+                PageInfo.builder()
+                    .pageSize(pageSize)
+                    .pageNo(pageNo)
+                    .count(count)
+                    .build()
+            )
+            .build();
     }
     
     /**
@@ -210,6 +227,7 @@ public class BuyOrNotService {
             .orderBy(groupCount.desc())
             .limit(1)
             .fetchOne();
+        
         if(tuple != null) {
             Long evaluateId = tuple.get(qEvaluateLike.evaluateId);
             return queryFactory.select(
@@ -251,16 +269,19 @@ public class BuyOrNotService {
                 evaluateBuySellRepository.save(vo);
                 resultMap.put("id", vo.getId());
             }, () -> {
-                EvaluateBuySell evaluateBuySell = new EvaluateBuySell();
-                evaluateBuySell.setAccountId(accountId);
-                evaluateBuySell.setBuySell(buySell);
-                evaluateBuySell.setCode(stockCode);
+                EvaluateBuySell evaluateBuySell = EvaluateBuySell.builder()
+                    .accountId(accountId)
+                    .buySell(buySell)
+                    .code(stockCode)
+                    .accountId(accountId)
+                    .build();
+                
                 evaluateBuySellRepository.save(evaluateBuySell);
                 resultMap.put("id", evaluateBuySell.getId());
             });
         }else {
             evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId)
-                    .ifPresent(evaluateBuySellRepository::delete);
+                .ifPresent(evaluateBuySellRepository::delete);
         }
         
         return resultMap;
@@ -273,13 +294,18 @@ public class BuyOrNotService {
      * @return
      */
     public EvaluateBuySellRes getBuySellCount(String stockCode, long accountId){
-        long buyCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
-        long sellCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
+        long buyCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
+        long sellCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
         
-        EvaluateBuySell evaluateBuySell = evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId)
-                .orElse(new EvaluateBuySell());
+        EvaluateBuySell evaluateBuySell = evaluateBuySellRepository
+                .findByCodeAndAccountId(stockCode, accountId).orElse(null);
         
-        return new EvaluateBuySellRes(stockCode, buyCnt, sellCnt, evaluateBuySell.getBuySell());
+        return EvaluateBuySellRes.builder()
+            .code(stockCode)
+            .buyCount(buyCount)
+            .sellCount(sellCount)
+            .evaluateBuySell(evaluateBuySell)
+            .build();
     }
 
 }

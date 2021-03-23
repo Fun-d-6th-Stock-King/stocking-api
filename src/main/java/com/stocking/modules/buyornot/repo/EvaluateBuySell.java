@@ -18,14 +18,14 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "evaluate_buy_sell")
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
 @EntityListeners(AuditingEntityListener.class)
+@AllArgsConstructor
+@SuperBuilder
 public class EvaluateBuySell {
 
     @Id

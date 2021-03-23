@@ -5,12 +5,14 @@ import java.util.List;
 import com.stocking.infra.common.PageInfo;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class EvaluationRes {
 
     private List<Evaluation> evaluationList;

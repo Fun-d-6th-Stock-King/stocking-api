@@ -15,13 +15,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "evaluate_like")
-@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Data
 @EntityListeners(AuditingEntityListener.class)
 public class EvaluateLike {

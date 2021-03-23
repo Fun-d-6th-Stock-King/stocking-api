@@ -16,15 +16,17 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "evaluate_comment")
-@NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
+@SuperBuilder
 public class EvaluateComment extends BaseEntity {
+
+    private static final long serialVersionUID = 4350238715729593930L;
 
     @Id
     @Column(name = "id")

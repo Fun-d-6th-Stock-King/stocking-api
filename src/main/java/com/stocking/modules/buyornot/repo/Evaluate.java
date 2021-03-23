@@ -1,7 +1,5 @@
 package com.stocking.modules.buyornot.repo;
 
-import java.io.Serializable;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -12,16 +10,18 @@ import javax.persistence.Table;
 import com.stocking.infra.common.BaseEntity;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "evaluate")
-@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class Evaluate extends BaseEntity implements Serializable {
+@SuperBuilder
+public class Evaluate extends BaseEntity {
 
     private static final long serialVersionUID = -4152035635258004671L;
 
