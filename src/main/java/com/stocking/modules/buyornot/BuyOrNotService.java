@@ -5,9 +5,9 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.querydsl.core.BooleanBuilder;
@@ -21,23 +21,31 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.PageInfo;
 import com.stocking.modules.account.QAccount;
-import com.stocking.modules.buyornot.BuyOrNotRes.SimpleEvaluation;
-import com.stocking.modules.buyornot.EvaluationRes.Evaluation;
+import com.stocking.modules.buyornot.repo.EvaluateBuySell;
+import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
+import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
+import com.stocking.modules.buyornot.repo.QEvaluate;
+import com.stocking.modules.buyornot.repo.QEvaluateComment;
+import com.stocking.modules.buyornot.repo.QEvaluateLike;
+import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
+import com.stocking.modules.buyornot.vo.Comment;
+import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
+import com.stocking.modules.buyornot.vo.EvaluationRes;
+import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class BuyOrNotService {
 
-//    @Autowired
-//    private EvaluateRepository buyOrNotRepository;
+    private final EvaluateBuySellRepository evaluateBuySellRepository;
     
-    @Autowired
-    private EvaluateLikeRepository evaluateLikeRepository;
+    private final JPAQueryFactory queryFactory;
     
-    @Autowired
-    private EvaluateBuySellRepository evaluateBuySellRepository;
-    
-    @Autowired
-    private JPAQueryFactory queryFactory;
+    private static final String LIKECOUNT = "likeCount";
     
     /**
      * 전체 평가 목록 조회
@@ -47,24 +55,22 @@ public class BuyOrNotService {
      * @param searchWord
      * @return
      */
-    public BuyOrNotRes getBuyOrNotList(BuyOrNotOrder order, int pageSize, int pageNo, String searchWord) {
+    public BuyOrNotRes getBuyOrNotList(BuyOrNotOrder order, long pageSize, long pageNo, String searchWord) {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QAccount qAccount = QAccount.account;
         
-        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         BooleanBuilder builder = new BooleanBuilder();
-        
-        if(searchWord != null) {
-            builder.and(qEvaluate.company.contains(searchWord));
-        } 
+        Optional.ofNullable(searchWord)
+            .ifPresent(vo -> builder.and(qEvaluate.company.contains(vo)));
         
         // 정렬조건
         OrderSpecifier<?> orderSpecifier = (order == BuyOrNotOrder.LATELY) ? qEvaluate.id.desc() : aliasLikeCount.desc();
         
-        List<SimpleEvaluation> list = queryFactory.select(
+        List<SimpleEvaluation> simpleEvaluationList = queryFactory.select(
                 Projections.fields(SimpleEvaluation.class,
                     qEvaluate.id,
                     qEvaluate.code,
@@ -87,9 +93,18 @@ public class BuyOrNotService {
             .fetch();
         
         // 전체 건수
-        long cnt = queryFactory.selectFrom(qEvaluate).where(builder).fetchCount();
+        long count = queryFactory.selectFrom(qEvaluate).where(builder).fetchCount();
         
-        return new BuyOrNotRes(list, new PageInfo(pageSize, pageNo, cnt));
+        return BuyOrNotRes.builder()
+            .simpleEvaluationList(simpleEvaluationList)
+            .pageInfo(
+                PageInfo.builder()
+                    .pageSize(pageSize)
+                    .pageNo(pageNo)
+                    .count(count)
+                    .build()
+            )
+            .build();
     }
     
     /**
@@ -101,7 +116,7 @@ public class BuyOrNotService {
      * @param pageNo
      * @return
      */
-    public EvaluationRes getEvaluationList(int accountId, String stockCode, int order, int pageSize, int pageNo) {
+    public EvaluationRes getEvaluationList(long accountId, String stockCode, int order, long pageSize, long pageNo) {
         
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
@@ -109,7 +124,7 @@ public class BuyOrNotService {
         QAccount qAccount = QAccount.account;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
-        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         // 정렬조건
         OrderSpecifier<?> orderSpecifier = (order == 1) ? qEvaluate.id.desc() : aliasLikeCount.desc();
@@ -172,9 +187,18 @@ public class BuyOrNotService {
         }).collect(Collectors.toList());
         
         // 전체 건수
-        long cnt = queryFactory.selectFrom(qEvaluate).where(qEvaluate.code.eq(stockCode)).fetchCount();
+        long count = queryFactory.selectFrom(qEvaluate).where(qEvaluate.code.eq(stockCode)).fetchCount();
         
-        return new EvaluationRes(evaluationList, new PageInfo(pageSize, pageNo, cnt));
+        return EvaluationRes.builder()
+            .evaluationList(evaluationList)
+            .pageInfo(
+                PageInfo.builder()
+                    .pageSize(pageSize)
+                    .pageNo(pageNo)
+                    .count(count)
+                    .build()
+            )
+            .build();
     }
     
     /**
@@ -189,7 +213,7 @@ public class BuyOrNotService {
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QAccount qAccount = QAccount.account;
         
-        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
         NumberPath<Long> groupCount = Expressions.numberPath(Long.class, "groupCount");
         
@@ -204,26 +228,29 @@ public class BuyOrNotService {
             .limit(1)
             .fetchOne();
         
-        int evaluateId = tuple.get(qEvaluateLike.evaluateId);
-        
-        return queryFactory.select(
-              Projections.fields(SimpleEvaluation.class,
-                  qEvaluate.id,
-                  qEvaluate.code,
-                  qEvaluate.company,
-                  qEvaluate.pros,
-                  qEvaluate.cons,
-                  qAccount.uuid,
-                  ExpressionUtils.as(
-                      JPAExpressions.select(qEvaluateLike.id.count())
-                          .from(qEvaluateLike)
-                          .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                      aliasLikeCount)   // 좋아요 횟수
-              )
-          ).from(qEvaluate)
-          .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
-          .where(qEvaluate.id.eq(evaluateId))
-          .fetchOne();
+        if(tuple != null) {
+            Long evaluateId = tuple.get(qEvaluateLike.evaluateId);
+            return queryFactory.select(
+                  Projections.fields(SimpleEvaluation.class,
+                      qEvaluate.id,
+                      qEvaluate.code,
+                      qEvaluate.company,
+                      qEvaluate.pros,
+                      qEvaluate.cons,
+                      qAccount.uuid,
+                      ExpressionUtils.as(
+                          JPAExpressions.select(qEvaluateLike.id.count())
+                              .from(qEvaluateLike)
+                              .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
+                          aliasLikeCount)   // 좋아요 횟수
+                  )
+              ).from(qEvaluate)
+              .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
+              .where(qEvaluate.id.eq(evaluateId))
+              .fetchOne();
+        }else { // 오늘 좋아요를 받은 평가 없는 경우
+            return null;
+        }
     }
     
     /**
@@ -233,7 +260,7 @@ public class BuyOrNotService {
      * @param buyOrNot
      * @return
      */
-    public Map<String, Object> saveBuySell(String stockCode, int accountId, BuySell buySell) {
+    public Map<String, Object> saveBuySell(String stockCode, long accountId, BuySell buySell) {
         Map<String, Object> resultMap = new HashMap<>();
         
         if(buySell != null) {
@@ -242,18 +269,19 @@ public class BuyOrNotService {
                 evaluateBuySellRepository.save(vo);
                 resultMap.put("id", vo.getId());
             }, () -> {
-                EvaluateBuySell evaluateBuySell = new EvaluateBuySell();
-                evaluateBuySell.setAccountId(accountId);
-                evaluateBuySell.setBuySell(buySell);
-                evaluateBuySell.setCode(stockCode);
+                EvaluateBuySell evaluateBuySell = EvaluateBuySell.builder()
+                    .accountId(accountId)
+                    .buySell(buySell)
+                    .code(stockCode)
+                    .accountId(accountId)
+                    .build();
+                
                 evaluateBuySellRepository.save(evaluateBuySell);
                 resultMap.put("id", evaluateBuySell.getId());
             });
         }else {
             evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId)
-                .ifPresent(vo -> {
-                    evaluateBuySellRepository.delete(vo);
-                });
+                .ifPresent(evaluateBuySellRepository::delete);
         }
         
         return resultMap;
@@ -265,14 +293,19 @@ public class BuyOrNotService {
      * @param accountId
      * @return
      */
-    public EvaluateBuySellRes getBuySellCount(String stockCode, int accountId){
-        long buyCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
-        long sellCnt = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
+    public EvaluateBuySellRes getBuySellCount(String stockCode, long accountId){
+        long buyCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
+        long sellCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
         
-        EvaluateBuySell evaluateBuySell = evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId)
-                .orElse(new EvaluateBuySell());
+        EvaluateBuySell evaluateBuySell = evaluateBuySellRepository
+                .findByCodeAndAccountId(stockCode, accountId).orElse(null);
         
-        return new EvaluateBuySellRes(stockCode, buyCnt, sellCnt, evaluateBuySell.getBuySell());
+        return EvaluateBuySellRes.builder()
+            .code(stockCode)
+            .buyCount(buyCount)
+            .sellCount(sellCount)
+            .evaluateBuySell(evaluateBuySell)
+            .build();
     }
 
 }

@@ -10,6 +10,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.stocking.modules.buyornot.repo.Evaluate;
+import com.stocking.modules.buyornot.repo.EvaluateComment;
+import com.stocking.modules.buyornot.vo.CommentReq;
+import com.stocking.modules.buyornot.vo.EvaluateReq;
+import com.stocking.modules.buyornot.vo.EvaluationDetailRes;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 

@@ -1,10 +1,12 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.repo;
 
 import java.time.LocalDateTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -16,32 +18,41 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "evaluate_like")
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "evaluate_buy_sell")
 @Data
 @EntityListeners(AuditingEntityListener.class)
-public class EvaluateLike {
+@AllArgsConstructor
+@SuperBuilder
+public class EvaluateBuySell {
 
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @ApiModelProperty(notes = "id", position = 1)
-    private int id;
-
-    @Column(name = "evaluate_id")
-    @ApiModelProperty(notes = "평가 ID", position = 2)
-    private int evaluateId;
+    private long id;
 
     @Column(name = "account_id")
-    @ApiModelProperty(notes = "계정 ID", position = 3)
-    private int accountId;
-    
+    @ApiModelProperty(notes = "계정 ID", position = 2)
+    private long accountId;
+
+    @Column(name = "code")
+    @ApiModelProperty(notes = "종목코드", position = 3)
+    private String code;
+
+    @Column(name = "buy_sell")
+    @Enumerated(EnumType.STRING)
+    @ApiModelProperty(notes = "살까 말까 평가", position = 4)
+    private BuySell buySell;
+
     @CreatedDate
     @Column(name = "created_date")
     private LocalDateTime createdDate;
+
+    public enum BuySell {
+        BUY, SELL;
+    }
 
 }

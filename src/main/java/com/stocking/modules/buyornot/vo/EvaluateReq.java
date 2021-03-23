@@ -1,4 +1,4 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.vo;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
