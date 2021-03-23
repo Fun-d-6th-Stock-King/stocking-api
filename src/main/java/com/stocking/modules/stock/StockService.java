@@ -22,6 +22,6 @@ public class StockService {
     public Page<Stock> getStockList(StockReq financeReq) {
         Sort sort = Sort.by(Direction.fromOptionalString(financeReq.getSortDirection()).orElse(Direction.ASC),
                 financeReq.getSortColumn());
-        return stockRepository.findAll(PageRequest.of(financeReq.getPage(), financeReq.getSize(), sort));
+        return stockRepository.findAll(PageRequest.of(financeReq.getPage().intValue(), financeReq.getSize().intValue(), sort));
     }
 }

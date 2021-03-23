@@ -10,18 +10,15 @@ import javax.validation.constraints.Pattern;
 public class SignUpForm {
 
     @NotBlank
-    private String uuid;
+    private Long id;
 
-    private String userId;
+    @NotBlank
+    private Long uuid;
 
     @NotBlank
     @Length(min = 1, max = 20)
     @Pattern(regexp = "^[ㄱ-ㅎ가-힣a-zA-Z0-9_-]{1,20}$")
     private String nickname;
-
-    private String name;
-
-    private String passwd;
 
     private String email;
 

@@ -2,6 +2,7 @@
 spring:
   profiles:
     active: local
+    include: oauth
 
 hibernate:
   dialect: org.hibernate.dialect.PostgreSQL9Dialect
@@ -10,6 +11,7 @@ hibernate:
   hbm2ddlAuto: none
 
 logging:
+  config: classpath:logback-spring.xml
   level[io.swagger.models.parameters.AbstractSerializableParameter]: error
   level[org.springframework]: INFO
 
@@ -21,7 +23,7 @@ spring:
   profiles: local
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://54.180.140.193:5432/stocking 
+      jdbc-url: jdbc:postgresql://stockking.gq:5432/stocking 
       username: stocking
       password: stocking1234
       driver-class-name: org.postgresql.Driver
@@ -37,7 +39,7 @@ spring:
   profiles: develop
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://54.180.140.193:5432/stocking?sslmode=disable
+      jdbc-url: jdbc:postgresql://stockking.gq:5432/stocking?sslmode=disable
       username: stocking
       password: stocking1234
       driver-class-name: org.postgresql.Driver
@@ -64,5 +66,6 @@ spring:
 logging:
   level[org.hibernate.type.descriptor.sql]: INFO
   
-  
+server:
+  port: ${PORT:80}
   

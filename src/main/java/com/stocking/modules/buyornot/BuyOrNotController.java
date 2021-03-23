@@ -13,7 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.stocking.modules.buyornot.BuyOrNotRes.SimpleEvaluation;
+import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
+import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
+import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
+import com.stocking.modules.buyornot.vo.EvaluationRes;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -140,7 +144,7 @@ public class BuyOrNotController {
 
     @ApiOperation(
         value = "종목별 현재 시세, 등락률, 일별 시세 등",
-        notes = "기간(오늘,7일,1개월,6개월,1년,전체기간) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
+        notes = "현재 시세, 등락률, 기간내 최고가, 최고가 일자, 기간내 최저가, 최저가 일자",
         response = EvaluateBuySellRes.class
     )
     @PostMapping("/{stockCode}/{beforeDt}/{afterDt}")
@@ -149,12 +153,6 @@ public class BuyOrNotController {
         @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,
         @ApiParam(value = "조회종료일자", defaultValue = "2021-12-31") @PathVariable String afterDt
     ) throws IOException {
-//      * 현재 시세
-//      * 등락률
-//      * 최근 10년간 최고가
-//      * 최고가 일자
-//      * 최근 10년간 최저가
-//      * 최저가 일자
         
         Stock stock = YahooFinance.get(stockCode, true);
         stock.getQuote().getPrice();            // 현재 시세

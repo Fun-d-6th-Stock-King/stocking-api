@@ -1,12 +1,44 @@
 package com.stocking.modules.account;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
 
-class AccountServiceTest {
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class AccountServiceTest {
+
+    @Autowired
+    AccountRepository accountRepository;
+
+    @Autowired
+    AccountService accountService;
+
+    @DisplayName("유저 가입 성공 체크")
+    @Transactional
     @Test
-    void saveNewAccount() {
+    public void saveNewAccountSuccessTest() {
+
+        //given
+        SignUpForm signUpForm = new SignUpForm();
+        signUpForm.setUuid(Long.valueOf(123123));
+        signUpForm.setNickname("TESTER");
+        signUpForm.setEmail("test@test.com");
+        signUpForm.setCheckSns(false);
+        accountService.saveNewAccount(signUpForm);
+
+        //when
+        List<Account> accountList = accountRepository.findAll();
+
+        //then
+        assertTrue(accountList.stream().anyMatch(account -> account.getUuid().equals(123123)));
     }
 }

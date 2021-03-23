@@ -1,13 +1,15 @@
-package com.stocking.modules.buyornot;
+package com.stocking.modules.buyornot.vo;
+
+import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class EvaluateBuySellRes {
     
     @ApiModelProperty(notes = "종목코드", position = 1)
@@ -20,5 +22,5 @@ public class EvaluateBuySellRes {
     private long sellCount;
     
     @ApiModelProperty(notes = "사용자의 살래 말래 선택 값", position = 4)
-    private BuySell userBuySell;
+    private EvaluateBuySell evaluateBuySell;
 }
