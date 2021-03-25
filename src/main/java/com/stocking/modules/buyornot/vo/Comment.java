@@ -16,7 +16,7 @@ public class Comment {
     
     private long id;
     private String comment;         // 코멘트
-    private String uuid;             // 작성자 uid
+    private long uuid;             // 작성자 uid
     private LocalDateTime createdDate;       // 작성일시
     
     public String getCreatedDate() {
