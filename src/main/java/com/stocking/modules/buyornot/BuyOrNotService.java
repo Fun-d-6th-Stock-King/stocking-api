@@ -448,7 +448,7 @@ public class BuyOrNotService {
     }
     
     public StockPriceRes getStockPrice(String stockCode, String beforeDt, String afterDt, Interval interval) throws IOException, ParseException {
-        Stock stock = YahooFinance.get(stockCode);
+        Stock stock = YahooFinance.get(stockCode + ".KS");
         
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
         Calendar startDt = Calendar.getInstance();
@@ -456,15 +456,15 @@ public class BuyOrNotService {
         startDt.setTime(format.parse(beforeDt));
         endDt.setTime(format.parse(afterDt));
         
-        List<HistoricalQuote> list = stock.getHistory(startDt, endDt, interval);
+        List<HistoricalQuote> quoteList = stock.getHistory(startDt, endDt, interval);
         
         Comparator<HistoricalQuote> comparatorByClose = 
                 (x1, x2) -> x1.getClose().compareTo(x2.getClose());
         
-        HistoricalQuote maxQuote = list.stream().max(comparatorByClose)
+        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
             .orElseThrow(NoSuchElementException::new);
         
-        HistoricalQuote minQuote = list.stream().min(comparatorByClose)
+        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
             .orElseThrow(NoSuchElementException::new);
         
         return StockPriceRes.builder()
@@ -472,6 +472,7 @@ public class BuyOrNotService {
                 .changeInPercent(stock.getQuote().getChangeInPercent()) // 등락률
                 .maxQuote(maxQuote)
                 .minQuote(minQuote)
+                .quoteList(quoteList)
                 .build();
     }
 

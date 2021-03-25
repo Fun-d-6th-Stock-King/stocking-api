@@ -1,6 +1,7 @@
 package com.stocking.modules.buyornot.vo;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -26,4 +27,7 @@ public class StockPriceRes {
     
     @ApiModelProperty(notes = "종가 최소", required=false, position=4)
     private HistoricalQuote minQuote;
+    
+    @ApiModelProperty(notes = "종가 목록", required=false, position=5)
+    private List<HistoricalQuote> quoteList;
 }
