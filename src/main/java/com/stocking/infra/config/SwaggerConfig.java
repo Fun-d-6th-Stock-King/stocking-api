@@ -1,6 +1,7 @@
 package com.stocking.infra.config;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,10 +9,14 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMethod;
 
+import com.stocking.modules.firebase.FireUserRes;
+
 import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.ParameterBuilder;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.builders.ResponseMessageBuilder;
+import springfox.documentation.schema.ModelRef;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.ResponseMessage;
 import springfox.documentation.spi.DocumentationType;
@@ -54,11 +59,31 @@ public class SwaggerConfig {
     
     @Bean
     public Docket buyOrNotApi() {
-        Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("buyornot").select()
+        ParameterBuilder aParameterBuilder = new ParameterBuilder();
+        aParameterBuilder.name("Uid") //헤더 이름
+                .description("사용자 UID") //설명
+                .modelRef(new ModelRef("string"))
+                .parameterType("header") 
+                .required(false)
+                .build();
+
+        Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .globalOperationParameters(List.of(aParameterBuilder.build()))
+                .ignoredParameterTypes(FireUserRes.class)
+                .groupName("buyornot").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.buyornot")).paths(PathSelectors.any())
                 .build();
 
         return setDocketCommonConfig(docket, "[buyOrNot] API", "살까말까 API");
+    }
+    
+    @Bean
+    public Docket firebaseApi() {
+        Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("firebase").select()
+                .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.firebase")).paths(PathSelectors.any())
+                .build();
+
+        return setDocketCommonConfig(docket, "[firebase] API", "파이어 사용자 API");
     }
 
     /**
