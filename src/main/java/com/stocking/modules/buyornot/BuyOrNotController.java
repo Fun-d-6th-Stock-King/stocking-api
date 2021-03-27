@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +20,7 @@ import com.stocking.modules.buyornot.vo.BuyOrNotPeriod;
 import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
 import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes;
+import com.stocking.modules.firebase.FireUserRes;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -125,12 +127,12 @@ public class BuyOrNotController {
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
         @ApiParam(value = "기간", defaultValue = "TODAY" ) @RequestParam(defaultValue = "TODAY") BuyOrNotPeriod period,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
-        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo
+        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
+        @RequestAttribute FireUserRes user
     ) {
-        String uid = "2";
         
         return new ResponseEntity<>(
-            buyOrNotService.getBestEvaluationList(uid, stockCode, period, pageSize, pageNo)
+            buyOrNotService.getBestEvaluationList(user.getUid(), stockCode, period, pageSize, pageNo)
         , HttpStatus.OK);
     }
 
