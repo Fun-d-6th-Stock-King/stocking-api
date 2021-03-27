@@ -26,15 +26,15 @@ public abstract class BaseEntity implements Serializable{
 
     private static final long serialVersionUID = 2403029774276941885L;
 
-    @Column(name = "created_id")
-    private long createdId;
+    @Column(name = "created_uid")
+    private String createdUid;
 
     @CreatedDate
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
-    @Column(name = "updated_id")
-    private long updatedId;
+    @Column(name = "updated_uid")
+    private String updatedUid;
 
     @LastModifiedDate
     @Column(name = "updated_date")

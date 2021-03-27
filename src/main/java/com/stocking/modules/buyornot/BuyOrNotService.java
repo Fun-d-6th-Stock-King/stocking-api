@@ -28,7 +28,6 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.PageInfo;
-import com.stocking.modules.account.QAccount;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
@@ -73,7 +72,6 @@ public class BuyOrNotService {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
-        QAccount qAccount = QAccount.account;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -94,7 +92,7 @@ public class BuyOrNotService {
                     qEvaluate.company,
                     qEvaluate.pros,
                     qEvaluate.cons,
-                    qAccount.uuid,
+                    qEvaluate.createdUid.as("uid"),
                     ExpressionUtils.as(
                         JPAExpressions.select(qEvaluateLike.id.count())
                             .from(qEvaluateLike)
@@ -102,7 +100,6 @@ public class BuyOrNotService {
                         aliasLikeCount)   // 좋아요 횟수
                 )
             ).from(qEvaluate)
-            .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
             .where(builder)
             .orderBy(orderSpecifier)
             .offset((pageNo - 1) * pageSize)
@@ -133,12 +130,11 @@ public class BuyOrNotService {
      * @param pageNo
      * @return
      */
-    public EvaluationRes getEvaluationList(long accountId, String stockCode, BuyOrNotOrder order, long pageSize, long pageNo) {
+    public EvaluationRes getEvaluationList(String uid, String stockCode, BuyOrNotOrder order, long pageSize, long pageNo) {
         
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
-        QAccount qAccount = QAccount.account;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
@@ -157,7 +153,7 @@ public class BuyOrNotService {
                 qEvaluate.pros,
                 qEvaluate.cons,
                 qEvaluate.giphyImgId,
-                qAccount.uuid,
+                qEvaluate.createdUid.as("uid"),
                 ExpressionUtils.as(
                     JPAExpressions.select(qEvaluateLike.id.count())
                         .from(qEvaluateLike)
@@ -167,11 +163,10 @@ public class BuyOrNotService {
                     JPAExpressions.select(qEvaluateLike.id)
                         .from(qEvaluateLike)
                         .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
-                                .and(qEvaluateLike.accountId.eq(accountId))).exists(),
+                                .and(qEvaluateLike.uid.eq(uid))).exists(),
                     "userlike")     // 사용자가 좋아요했는지 여부
             )
         ).from(qEvaluate)
-        .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
         .where(qEvaluate.code.eq(stockCode))
         .orderBy(orderSpecifier)
         .offset((pageNo - 1) * pageSize)
@@ -192,11 +187,10 @@ public class BuyOrNotService {
                             qEvaluateComment.id,
                             qEvaluateComment.comment,
                             qEvaluateComment.createdDate,
-                            qAccount.uuid
+                            qEvaluateComment.createdUid.as("uid")
                             )
                         )
                     .from(qEvaluateComment)
-                    .innerJoin(qAccount).on(qEvaluateComment.createdId.eq(qAccount.id))
                     .where(qEvaluateComment.evaluateId.eq(vo.getId()))
                     .orderBy(qEvaluateComment.createdDate.desc())
                     .limit(1)
@@ -231,7 +225,6 @@ public class BuyOrNotService {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
-        QAccount qAccount = QAccount.account;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -257,7 +250,7 @@ public class BuyOrNotService {
                       qEvaluate.company,
                       qEvaluate.pros,
                       qEvaluate.cons,
-                      qAccount.uuid,
+                      qEvaluate.createdUid.as("uid"),
                       ExpressionUtils.as(
                           JPAExpressions.select(qEvaluateLike.id.count())
                               .from(qEvaluateLike)
@@ -265,7 +258,6 @@ public class BuyOrNotService {
                           aliasLikeCount)   // 좋아요 횟수
                   )
               ).from(qEvaluate)
-              .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
               .where(qEvaluate.id.eq(evaluateId))
               .fetchOne();
         }else { // 오늘 좋아요를 받은 평가 없는 경우
@@ -280,27 +272,26 @@ public class BuyOrNotService {
      * @param buyOrNot
      * @return
      */
-    public Map<String, Object> saveBuySell(String stockCode, long accountId, BuySell buySell) {
+    public Map<String, Object> saveBuySell(String stockCode, String uid, BuySell buySell) {
         Map<String, Object> resultMap = new HashMap<>();
         
         if(buySell != null) {
-            evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId).ifPresentOrElse(vo -> {
+            evaluateBuySellRepository.findByCodeAndUid(stockCode, uid).ifPresentOrElse(vo -> {
                 vo.setBuySell(buySell);
                 evaluateBuySellRepository.save(vo);
                 resultMap.put("id", vo.getId());
             }, () -> {
                 EvaluateBuySell evaluateBuySell = EvaluateBuySell.builder()
-                    .accountId(accountId)
-                    .buySell(buySell)
-                    .code(stockCode)
-                    .accountId(accountId)
-                    .build();
+                        .uid(uid)
+                        .buySell(buySell)
+                        .code(stockCode)
+                        .build();
                 
                 evaluateBuySellRepository.save(evaluateBuySell);
                 resultMap.put("id", evaluateBuySell.getId());
             });
         }else {
-            evaluateBuySellRepository.findByCodeAndAccountId(stockCode, accountId)
+            evaluateBuySellRepository.findByCodeAndUid(stockCode, uid)
                 .ifPresent(evaluateBuySellRepository::delete);
         }
         
@@ -313,12 +304,12 @@ public class BuyOrNotService {
      * @param accountId
      * @return
      */
-    public EvaluateBuySellRes getBuySellCount(String stockCode, long accountId){
+    public EvaluateBuySellRes getBuySellCount(String stockCode, String uid){
         long buyCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
         long sellCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
         
         EvaluateBuySell evaluateBuySell = evaluateBuySellRepository
-                .findByCodeAndAccountId(stockCode, accountId).orElse(null);
+                .findByCodeAndUid(stockCode, uid).orElse(null);
         
         return EvaluateBuySellRes.builder()
             .code(stockCode)
@@ -337,7 +328,7 @@ public class BuyOrNotService {
      * @param pageNo
      * @return
      */
-    public EvaluationRes getBestEvaluationList(long accountId, String stockCode, BuyOrNotPeriod period, long pageSize, long pageNo) {
+    public EvaluationRes getBestEvaluationList(String uid, String stockCode, BuyOrNotPeriod period, long pageSize, long pageNo) {
         LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
         LocalDateTime startDt = now.atTime(0, 0, 0);
         LocalDateTime endDt = now.atTime(23, 59, 59);
@@ -345,7 +336,6 @@ public class BuyOrNotService {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
-        QAccount qAccount = QAccount.account;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
@@ -372,7 +362,7 @@ public class BuyOrNotService {
                 qEvaluate.pros,
                 qEvaluate.cons,
                 qEvaluate.giphyImgId,
-                qAccount.uuid,
+                qEvaluate.createdUid.as("uid"),
                 ExpressionUtils.as(
                     JPAExpressions.select(qEvaluateLike.id.count())
                         .from(qEvaluateLike)
@@ -382,11 +372,10 @@ public class BuyOrNotService {
                     JPAExpressions.select(qEvaluateLike.id)
                         .from(qEvaluateLike)
                         .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
-                                .and(qEvaluateLike.accountId.eq(accountId))).exists(),
+                                .and(qEvaluateLike.uid.eq(uid))).exists(),
                     "userlike")     // 사용자가 좋아요했는지 여부
             )
         ).from(qEvaluate)
-        .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
         .where(
             qEvaluate.code.eq(stockCode)
             .and(qEvaluate.id.in(JPAExpressions.select(qEvaluateLike.evaluateId)
@@ -411,12 +400,11 @@ public class BuyOrNotService {
                         Projections.fields(Comment.class,
                             qEvaluateComment.id,
                             qEvaluateComment.comment,
-                            qEvaluateComment.createdDate,
-                            qAccount.uuid
+                            qEvaluateComment.createdUid.as("uid"),
+                            qEvaluateComment.createdDate
                             )
                         )
                     .from(qEvaluateComment)
-                    .innerJoin(qAccount).on(qEvaluateComment.createdId.eq(qAccount.id))
                     .where(qEvaluateComment.evaluateId.eq(vo.getId()))
                     .orderBy(qEvaluateComment.createdDate.desc())
                     .limit(1)

@@ -12,7 +12,6 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.stocking.modules.account.QAccount;
 import com.stocking.modules.buyornot.repo.Evaluate;
 import com.stocking.modules.buyornot.repo.EvaluateComment;
 import com.stocking.modules.buyornot.repo.EvaluateCommentRepository;
@@ -48,18 +47,18 @@ public class EvaluateService {
     /**
      * 좋아요 저장 / 삭제
      * @param evaluateId
-     * @param accountId
+     * @param uid
      * @return
      */
-    public Map<String, Object> saveLike(long evaluateId, long accountId) {
+    public Map<String, Object> saveLike(long evaluateId, String uid) {
         EvaluateLike evaluateLike = EvaluateLike.builder()
-            .accountId(accountId)
+            .uid(uid)
             .evaluateId(evaluateId)
             .build();
         
         Map<String, Object> resultMap = new HashMap<>();
         
-        evaluateLikeRepository.findByEvaluateIdAndAccountId(evaluateId, accountId)
+        evaluateLikeRepository.findByEvaluateIdAndUid(evaluateId, uid)
             .ifPresentOrElse(
                 vo -> {
                     resultMap.put("id", vo.getId());
@@ -78,11 +77,11 @@ public class EvaluateService {
     /**
      * 평가 저장
      * @param evaluateReq
-     * @param accountId
+     * @param uid
      * @return
      * @throws Exception
      */
-    public Evaluate saveEvaluate(EvaluateReq evaluateReq, long accountId) throws Exception {
+    public Evaluate saveEvaluate(EvaluateReq evaluateReq, String uid) throws Exception {
         Stock stock = stockRepository.findByCode(evaluateReq.getCode())
                 .orElseThrow(() -> new Exception("종목코드가 없습니다."));
         
@@ -92,7 +91,7 @@ public class EvaluateService {
             .pros(evaluateReq.getPros())
             .cons(evaluateReq.getCons())
             .giphyImgId(evaluateReq.getGiphyImgId())
-            .createdId(accountId)
+            .createdUid(uid)
             .build();
         
         return evaluateRepository.save(evaluate);
@@ -102,14 +101,14 @@ public class EvaluateService {
      * 코멘트 저장
      * @param evaluateId
      * @param comment
-     * @param accountId
+     * @param uid
      * @return
      */
-    public EvaluateComment saveComment(long evaluateId, String comment, long accountId) {
+    public EvaluateComment saveComment(long evaluateId, String comment, String uid) {
         EvaluateComment evaluateComment = EvaluateComment.builder()
             .evaluateId(evaluateId)
             .comment(comment)
-            .createdId(accountId)
+            .createdUid(uid)
             .build();
         return evaluateCommentRepository.save(evaluateComment);
     }
@@ -117,14 +116,13 @@ public class EvaluateService {
     /**
      * 평가 상세
      * @param evaluateId
-     * @param accountId
+     * @param uid
      * @return
      */
-    public EvaluationDetailRes getDetail(long evaluateId, long accountId) {
+    public EvaluationDetailRes getDetail(long evaluateId, String uid) {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
-        QAccount qAccount = QAccount.account;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
@@ -137,7 +135,7 @@ public class EvaluateService {
                     qEvaluate.pros,
                     qEvaluate.cons,
                     qEvaluate.giphyImgId,
-                    qAccount.uuid,
+                    qEvaluate.createdUid.as("uid"),
                     ExpressionUtils.as(
                         JPAExpressions.select(qEvaluateLike.id.count())
                             .from(qEvaluateLike)
@@ -147,11 +145,10 @@ public class EvaluateService {
                         JPAExpressions.select(qEvaluateLike.id)
                             .from(qEvaluateLike)
                             .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
-                                    .and(qEvaluateLike.accountId.eq(accountId))).exists(),
+                                    .and(qEvaluateLike.uid.eq(uid))).exists(),
                         "userlike")     // 사용자가 좋아요했는지 여부
                 )
             ).from(qEvaluate)
-            .innerJoin(qAccount).on(qEvaluate.createdId.eq(qAccount.id))
             .where(qEvaluate.id.eq(evaluateId))
             .fetchOne();
         
@@ -159,11 +156,10 @@ public class EvaluateService {
                 Projections.fields(Comment.class,
                     qEvaluateComment.id,
                     qEvaluateComment.comment,
-                    qEvaluateComment.createdDate,
-                    qAccount.uuid
+                    qEvaluateComment.createdUid.as("uid"),
+                    qEvaluateComment.createdDate
                 )
             ).from(qEvaluateComment)
-            .innerJoin(qAccount).on(qEvaluateComment.createdId.eq(qAccount.id))
             .where(qEvaluateComment.evaluateId.eq(evaluateId))
             .fetch();
         

@@ -63,9 +63,9 @@ public class BuyOrNotController {
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo
     ) {
-        int accountId = 2;
+        String uid = "2";
         return new ResponseEntity<>(
-            buyOrNotService.getEvaluationList(accountId, stockCode, order, pageSize, pageNo)
+            buyOrNotService.getEvaluationList(uid, stockCode, order, pageSize, pageNo)
         , HttpStatus.OK);
     }
     
@@ -92,10 +92,10 @@ public class BuyOrNotController {
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
         @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell
     ) {
-        int accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            buyOrNotService.saveBuySell(stockCode, accountId, buySell)
+            buyOrNotService.saveBuySell(stockCode, uid, buySell)
         , HttpStatus.OK);
     }
     
@@ -108,10 +108,10 @@ public class BuyOrNotController {
     public ResponseEntity<Object> getBuyOrNotCount(
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
     ) {
-        int accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            buyOrNotService.getBuySellCount(stockCode, accountId)
+            buyOrNotService.getBuySellCount(stockCode, uid)
         , HttpStatus.OK);
     }
     
@@ -127,10 +127,10 @@ public class BuyOrNotController {
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo
     ) {
-        long accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            buyOrNotService.getBestEvaluationList(accountId, stockCode, period, pageSize, pageNo)
+            buyOrNotService.getBestEvaluationList(uid, stockCode, period, pageSize, pageNo)
         , HttpStatus.OK);
     }
 
@@ -139,7 +139,7 @@ public class BuyOrNotController {
         notes = "현재 시세, 등락률, 기간내 최고가, 최고가 일자, 기간내 최저가, 최저가 일자",
         response = EvaluateBuySellRes.class
     )
-    @PostMapping("/{stockCode}/{beforeDt}/{afterDt}")
+    @GetMapping("/{stockCode}/{beforeDt}/{afterDt}")
     public ResponseEntity<Object> getStockPrice(
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
         @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,

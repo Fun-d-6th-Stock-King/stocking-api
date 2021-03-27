@@ -18,6 +18,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Entity
@@ -25,6 +26,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor
+@NoArgsConstructor
 @SuperBuilder
 public class EvaluateBuySell {
 
@@ -34,9 +36,9 @@ public class EvaluateBuySell {
     @ApiModelProperty(notes = "id", position = 1)
     private long id;
 
-    @Column(name = "account_id")
+    @Column(name = "uid")
     @ApiModelProperty(notes = "계정 ID", position = 2)
-    private long accountId;
+    private String uid;
 
     @Column(name = "code")
     @ApiModelProperty(notes = "종목코드", position = 3)

@@ -10,7 +10,7 @@ import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 @Repository
 public interface EvaluateBuySellRepository extends JpaRepository<EvaluateBuySell, Long> {
     
-    public Optional<EvaluateBuySell> findByCodeAndAccountId(String stockCode, long accountId);
+    public Optional<EvaluateBuySell> findByCodeAndUid(String stockCode, String uid);
     
     public long countByCodeAndBuySell(String stockCode, BuySell buySell);
 

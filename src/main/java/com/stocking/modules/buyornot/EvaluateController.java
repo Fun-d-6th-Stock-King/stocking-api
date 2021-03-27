@@ -35,10 +35,10 @@ public class EvaluateController {
     public ResponseEntity<Object> evaluate(
         @RequestBody EvaluateReq evaluateReq
     ) throws Exception {
-        int accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            evaluateService.saveEvaluate(evaluateReq, accountId)
+            evaluateService.saveEvaluate(evaluateReq, uid)
         , HttpStatus.OK);
     }
 
@@ -51,10 +51,10 @@ public class EvaluateController {
     public ResponseEntity<Object> saveLike(
         @PathVariable int evaluateId
     ) {
-        int accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            evaluateService.saveLike(evaluateId, accountId)
+            evaluateService.saveLike(evaluateId, uid)
         , HttpStatus.OK);
     }
     
@@ -68,10 +68,10 @@ public class EvaluateController {
         @PathVariable int evaluateId,
         @RequestBody CommentReq commentReq
     ) {
-        int accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            evaluateService.saveComment(evaluateId, commentReq.getComment(), accountId)
+            evaluateService.saveComment(evaluateId, commentReq.getComment(), uid)
         , HttpStatus.OK);
     }
     
@@ -84,10 +84,10 @@ public class EvaluateController {
     public ResponseEntity<Object> detail(
         @PathVariable int evaluateId
     ) {
-        int accountId = 2;
+        String uid = "2";
         
         return new ResponseEntity<>(
-            evaluateService.getDetail(evaluateId, accountId)
+            evaluateService.getDetail(evaluateId, uid)
         , HttpStatus.OK);
     }
 }

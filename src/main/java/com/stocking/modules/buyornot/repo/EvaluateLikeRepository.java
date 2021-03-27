@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EvaluateLikeRepository extends JpaRepository<EvaluateLike, Long> {
 
-    Optional<EvaluateLike> findByEvaluateIdAndAccountId(long evaluateId, long accountId);
+    Optional<EvaluateLike> findByEvaluateIdAndUid(long evaluateId, String uid);
     
     Optional<EvaluateLike> findByCreatedDateBetween(LocalDateTime startDt, LocalDateTime endDt);
 }

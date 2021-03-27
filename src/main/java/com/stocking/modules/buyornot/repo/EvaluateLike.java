@@ -17,10 +17,12 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "evaluate_like")
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @Data
 @EntityListeners(AuditingEntityListener.class)
@@ -36,9 +38,9 @@ public class EvaluateLike {
     @ApiModelProperty(notes = "평가 ID", position = 2)
     private long evaluateId;
 
-    @Column(name = "account_id")
+    @Column(name = "uid")
     @ApiModelProperty(notes = "계정 ID", position = 3)
-    private long accountId;
+    private String uid;
     
     @CreatedDate
     @Column(name = "created_date")
