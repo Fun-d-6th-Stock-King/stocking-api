@@ -14,13 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.stocking.infra.common.FirebaseUser;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
 import com.stocking.modules.buyornot.vo.BuyOrNotPeriod;
 import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
 import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes;
-import com.stocking.modules.firebase.FireUserRes;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -63,11 +63,11 @@ public class BuyOrNotController {
         @ApiParam(value = "종목코드", defaultValue = "005930", required = true ) @PathVariable String stockCode,
         @ApiParam(value = "정렬 조건", defaultValue = "LATELY" ) @RequestParam(defaultValue = "LATELY") BuyOrNotOrder order,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
-        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo
+        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
+        @RequestAttribute FirebaseUser user
     ) {
-        String uid = "2";
         return new ResponseEntity<>(
-            buyOrNotService.getEvaluationList(uid, stockCode, order, pageSize, pageNo)
+            buyOrNotService.getEvaluationList(user.getUid(), stockCode, order, pageSize, pageNo)
         , HttpStatus.OK);
     }
     
@@ -92,12 +92,11 @@ public class BuyOrNotController {
     @PostMapping("/{stockCode}")
     public ResponseEntity<Object> buyOrNot(
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
-        @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell
+        @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell,
+        @RequestAttribute FirebaseUser user
     ) {
-        String uid = "2";
-        
         return new ResponseEntity<>(
-            buyOrNotService.saveBuySell(stockCode, uid, buySell)
+            buyOrNotService.saveBuySell(stockCode, user.getUid(), buySell)
         , HttpStatus.OK);
     }
     
@@ -108,12 +107,11 @@ public class BuyOrNotController {
     )
     @GetMapping("/{stockCode}")
     public ResponseEntity<Object> getBuyOrNotCount(
-        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @RequestAttribute FirebaseUser user
     ) {
-        String uid = "2";
-        
         return new ResponseEntity<>(
-            buyOrNotService.getBuySellCount(stockCode, uid)
+            buyOrNotService.getBuySellCount(stockCode, user.getUid())
         , HttpStatus.OK);
     }
     
@@ -128,7 +126,7 @@ public class BuyOrNotController {
         @ApiParam(value = "기간", defaultValue = "TODAY" ) @RequestParam(defaultValue = "TODAY") BuyOrNotPeriod period,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
-        @RequestAttribute FireUserRes user
+        @RequestAttribute FirebaseUser user
     ) {
         
         return new ResponseEntity<>(

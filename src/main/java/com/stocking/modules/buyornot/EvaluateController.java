@@ -6,10 +6,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.stocking.infra.common.FirebaseUser;
 import com.stocking.modules.buyornot.repo.Evaluate;
 import com.stocking.modules.buyornot.repo.EvaluateComment;
 import com.stocking.modules.buyornot.vo.CommentReq;
@@ -33,12 +35,11 @@ public class EvaluateController {
     )
     @PostMapping
     public ResponseEntity<Object> evaluate(
-        @RequestBody EvaluateReq evaluateReq
+        @RequestBody EvaluateReq evaluateReq,
+        @RequestAttribute FirebaseUser user
     ) throws Exception {
-        String uid = "2";
-        
         return new ResponseEntity<>(
-            evaluateService.saveEvaluate(evaluateReq, uid)
+            evaluateService.saveEvaluate(evaluateReq, user.getUid())
         , HttpStatus.OK);
     }
 
@@ -49,12 +50,11 @@ public class EvaluateController {
     )
     @PostMapping("/{evaluateId}/like")
     public ResponseEntity<Object> saveLike(
-        @PathVariable int evaluateId
+        @PathVariable int evaluateId,
+        @RequestAttribute FirebaseUser user
     ) {
-        String uid = "2";
-        
         return new ResponseEntity<>(
-            evaluateService.saveLike(evaluateId, uid)
+            evaluateService.saveLike(evaluateId, user.getUid())
         , HttpStatus.OK);
     }
     
@@ -66,12 +66,11 @@ public class EvaluateController {
     @PostMapping("/{evaluateId}/comment")
     public ResponseEntity<Object> comment(
         @PathVariable int evaluateId,
-        @RequestBody CommentReq commentReq
+        @RequestBody CommentReq commentReq,
+        @RequestAttribute FirebaseUser user
     ) {
-        String uid = "2";
-        
         return new ResponseEntity<>(
-            evaluateService.saveComment(evaluateId, commentReq.getComment(), uid)
+            evaluateService.saveComment(evaluateId, commentReq.getComment(), user.getUid())
         , HttpStatus.OK);
     }
     
@@ -82,12 +81,11 @@ public class EvaluateController {
     )
     @GetMapping("/{evaluateId}")
     public ResponseEntity<Object> detail(
-        @PathVariable int evaluateId
+        @PathVariable int evaluateId,
+        @RequestAttribute FirebaseUser user
     ) {
-        String uid = "2";
-        
         return new ResponseEntity<>(
-            evaluateService.getDetail(evaluateId, uid)
+            evaluateService.getDetail(evaluateId, user.getUid())
         , HttpStatus.OK);
     }
 }

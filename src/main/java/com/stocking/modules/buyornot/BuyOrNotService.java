@@ -308,14 +308,20 @@ public class BuyOrNotService {
         long buyCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.BUY);
         long sellCount = evaluateBuySellRepository.countByCodeAndBuySell(stockCode, BuySell.SELL);
         
+        BuySell buySell = null;
+        
         EvaluateBuySell evaluateBuySell = evaluateBuySellRepository
                 .findByCodeAndUid(stockCode, uid).orElse(null);
+        
+        if(evaluateBuySell != null) {
+            buySell = evaluateBuySell.getBuySell();
+        }
         
         return EvaluateBuySellRes.builder()
             .code(stockCode)
             .buyCount(buyCount)
             .sellCount(sellCount)
-            .evaluateBuySell(evaluateBuySell)
+            .userBuySell(buySell)
             .build();
     }
     

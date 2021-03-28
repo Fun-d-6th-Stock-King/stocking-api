@@ -1,6 +1,7 @@
 package com.stocking.infra.config;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
@@ -9,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.stocking.modules.firebase.FireUserRes;
+import com.stocking.infra.common.FirebaseUser;
 
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.ParameterBuilder;
@@ -18,8 +19,12 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.builders.ResponseMessageBuilder;
 import springfox.documentation.schema.ModelRef;
 import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.ApiKey;
+import springfox.documentation.service.AuthorizationScope;
 import springfox.documentation.service.ResponseMessage;
+import springfox.documentation.service.SecurityReference;
 import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2WebMvc;
 
@@ -59,31 +64,13 @@ public class SwaggerConfig {
     
     @Bean
     public Docket buyOrNotApi() {
-        ParameterBuilder aParameterBuilder = new ParameterBuilder();
-        aParameterBuilder.name("Uid") //헤더 이름
-                .description("사용자 UID") //설명
-                .modelRef(new ModelRef("string"))
-                .parameterType("header") 
-                .required(false)
-                .build();
-
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
-                .globalOperationParameters(List.of(aParameterBuilder.build()))
-                .ignoredParameterTypes(FireUserRes.class)
+                .ignoredParameterTypes(FirebaseUser.class)
                 .groupName("buyornot").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.buyornot")).paths(PathSelectors.any())
                 .build();
 
         return setDocketCommonConfig(docket, "[buyOrNot] API", "살까말까 API");
-    }
-    
-    @Bean
-    public Docket firebaseApi() {
-        Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("firebase").select()
-                .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.firebase")).paths(PathSelectors.any())
-                .build();
-
-        return setDocketCommonConfig(docket, "[firebase] API", "파이어 사용자 API");
     }
 
     /**
@@ -104,9 +91,9 @@ public class SwaggerConfig {
                 .globalResponseMessage(RequestMethod.GET, this.responseMessageSetGet())
                 .globalResponseMessage(RequestMethod.POST, this.responseMessageSetPost())
                 .globalResponseMessage(RequestMethod.DELETE, this.responseMessageSetDelete())
-                .globalResponseMessage(RequestMethod.PUT, this.responseMessageSetPut());
-//			.securityContexts(Arrays.asList(securityContext()))
-//			.securitySchemes(Arrays.asList(apiKey()));
+                .globalResponseMessage(RequestMethod.PUT, this.responseMessageSetPut())
+    			.securityContexts(Arrays.asList(securityContext()))
+    			.securitySchemes(Arrays.asList(apiKey()));
     }
 
     /**
@@ -186,24 +173,24 @@ public class SwaggerConfig {
         return this.responseMessageSetCommon();
     }
 
-//	private ApiKey apiKey() {
-//        return new ApiKey("JWT", "Authorization", "header");
-//    }
-//	
-//	private SecurityContext securityContext() {
-//        return springfox
-//                .documentation
-//                .spi.service
-//                .contexts
-//                .SecurityContext
-//                .builder()
-//                .securityReferences(defaultAuth()).forPaths(PathSelectors.any()).build();
-//    }
+	private ApiKey apiKey() {
+        return new ApiKey("JWT", "Authorization", "header");
+    }
+	
+	private SecurityContext securityContext() {
+        return springfox
+                .documentation
+                .spi.service
+                .contexts
+                .SecurityContext
+                .builder()
+                .securityReferences(defaultAuth()).forPaths(PathSelectors.any()).build();
+    }
 
-//	List<SecurityReference> defaultAuth() {
-//        AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
-//        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
-//        authorizationScopes[0] = authorizationScope;
-//        return Arrays.asList(new SecurityReference("JWT", authorizationScopes));
-//    }
+	List<SecurityReference> defaultAuth() {
+        AuthorizationScope authorizationScope = new AuthorizationScope("global", "accessEverything");
+        AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
+        authorizationScopes[0] = authorizationScope;
+        return Arrays.asList(new SecurityReference("JWT", authorizationScopes));
+    }
 }
