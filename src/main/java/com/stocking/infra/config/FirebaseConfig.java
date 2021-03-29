@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class FirebaseConfig {
 
-    private static final String FIREBASE_CONFIG_PATH = "alert-billing-firebase-adminsdk-y2m7t-297952e15c.json";
+    private static final String FIREBASE_CONFIG_PATH = "should-have-bought-firebase-adminsdk-1em9e-42a699187d.json";
 
     @Bean
     public void initailize() throws IOException {
