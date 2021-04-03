@@ -1,11 +1,14 @@
 package com.stocking.modules.buythen;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
 @NoArgsConstructor
+@Getter
+@Table(name = "old_stock")
 @Entity
 public class OldStock {
 

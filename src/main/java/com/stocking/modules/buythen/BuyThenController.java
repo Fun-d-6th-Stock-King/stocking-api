@@ -1,5 +1,6 @@
 package com.stocking.modules.buythen;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,8 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class BuyThenController {
 
+    @Autowired
+    private BuyThenService buyThenService;
+
     @GetMapping
-    public ResponseEntity<Object> calculate(@ModelAttribute BuyThenForm buyThenForm) {
-        return new ResponseEntity<>(BuyThenService.getPastStock(buyThenForm), HttpStatus.OK);
+    public ResponseEntity<Object> calculate(
+            @ModelAttribute BuyThenForm buyThenForm
+    ) throws Exception {
+        return new ResponseEntity<>(
+                buyThenService.getPastStock(buyThenForm),
+                HttpStatus.OK);
     }
 }

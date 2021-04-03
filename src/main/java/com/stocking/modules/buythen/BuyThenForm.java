@@ -9,6 +9,7 @@ import javax.validation.constraints.NotBlank;
 
 @Data
 @AllArgsConstructor
+@Component
 public class BuyThenForm {
 
     @NotBlank
