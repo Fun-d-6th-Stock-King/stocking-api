@@ -64,7 +64,7 @@ public class BuyOrNotController {
         @ApiParam(value = "정렬 조건", defaultValue = "LATELY" ) @RequestParam(defaultValue = "LATELY") BuyOrNotOrder order,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
-        @RequestAttribute FirebaseUser user
+        @RequestAttribute(required = true) FirebaseUser user
     ) {
         return new ResponseEntity<>(
             buyOrNotService.getEvaluationList(user.getUid(), stockCode, order, pageSize, pageNo)
@@ -126,7 +126,7 @@ public class BuyOrNotController {
         @ApiParam(value = "기간", defaultValue = "TODAY" ) @RequestParam(defaultValue = "TODAY") BuyOrNotPeriod period,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
-        @RequestAttribute FirebaseUser user
+        @RequestAttribute(required = false) FirebaseUser user
     ) {
         
         return new ResponseEntity<>(

@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.google.common.collect.ImmutableMap;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
@@ -261,7 +262,7 @@ public class BuyOrNotService {
               .where(qEvaluate.id.eq(evaluateId))
               .fetchOne();
         }else { // 오늘 좋아요를 받은 평가 없는 경우
-            return null;
+            return SimpleEvaluation.builder().build();
         }
     }
     
