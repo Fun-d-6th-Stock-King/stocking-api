@@ -1,41 +1,70 @@
 package com.stocking.modules.buythen;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class BuyThenService {
 
     @Autowired
-    private static OldStockRepository oldStockRepository;
-
-    @Autowired
-    public static BuyThen getPastStock(BuyThenForm buyThenForm) throws Exception {
-
-        String company = buyThenForm.getCompany();
-        System.out.println(company);
-        List<OldStock> oldStock1 = oldStockRepository.findAll();
-        System.out.println(oldStock1);
-        OldStock oldStock = oldStockRepository.findByCompany(company)
-                .orElseThrow(() -> new Exception("회사명이 올바르지 않습니다."));;
+    private OldStockRepository oldStockRepository;
+    
+    /**
+     * 계산기
+     * @param buyThenForm
+     * @return
+     * @throws Exception
+     */
+    public BuyThen getPastStock(BuyThenForm buyThenForm) throws Exception {
+        OldStock oldStock = oldStockRepository.findByCode(buyThenForm.getCode())
+                .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
         String code = oldStock.getCode();
-        System.out.println(code);
-        String date = buyThenForm.getDate();
-        Long price = buyThenForm.getPrice();
+        InvestDate date = buyThenForm.getDate();
+        BigDecimal investPrice = buyThenForm.getInvestPrice();    // 투자금
 
         // 과거 주가
-        long oldStockPrice = 0;
-        if (date == "1년 전") {
+        BigDecimal oldStockPrice = new BigDecimal(0);
+        if (date == InvestDate.YEAR1) { // 1년전
             oldStockPrice = oldStock.getOneAgoStock();
-        } else if (date == "5년 전") {
+        } else if (date == InvestDate.YEAR5) {  // 5년전
             oldStockPrice = oldStock.getFiveAgoStock();
-        } else if (date == "10년 전") {
+        } else if (date == InvestDate.YEAR10) { // 10년전
             oldStockPrice = oldStock.getTenAgoStock();
         }
+        
+        BigDecimal currentPrice = oldStock.getCurrentStock();
+        BigDecimal holdingStock = investPrice.divide(oldStockPrice, MathContext.DECIMAL32);     // 내가 산 주식 개수 
+        BigDecimal yieldPrice = holdingStock.multiply(currentPrice); // 수익금 = (투자금/이전종가) * 현재가
+        BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice).divide(oldStockPrice, MathContext.DECIMAL32)
+                .multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
 
-        BuyThen buyThen = new BuyThen(code, company, date, oldStockPrice);
-        return buyThen;
+        BigDecimal salaryYear = new BigDecimal(0);      // 연봉
+        BigDecimal salaryMonth = new BigDecimal(0);     // 월급
+        if (date == InvestDate.YEAR1) { // 1년전
+            salaryYear = yieldPrice;
+            salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
+        } else if (date == InvestDate.YEAR5) {  // 5년전
+            salaryYear = yieldPrice.divide(new BigDecimal(5), MathContext.DECIMAL32);
+            salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
+        } else if (date == InvestDate.YEAR10) { // 10년전
+            salaryYear = yieldPrice.divide(new BigDecimal(10), MathContext.DECIMAL32);
+            salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
+        }
+        
+        return BuyThen.builder()
+            .code(code)
+            .company(oldStock.getCompany())
+            .date(date)
+            .oldPrice(oldStockPrice)
+            .currentPrice(currentPrice)
+            .yieldPrice(yieldPrice)
+            .yieldPercent(yieldPercent)
+            .holdingStock(holdingStock)
+            .salaryYear(salaryYear)
+            .salaryMonth(salaryMonth)
+            .build();
     }
 }

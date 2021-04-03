@@ -9,7 +9,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @Builder
-public class BuyThen {
+public class BuyThenRes {
 
     private String code;    // 종목 코드
     private String company; // 회사명

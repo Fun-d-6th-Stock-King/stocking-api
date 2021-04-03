@@ -72,6 +72,17 @@ public class SwaggerConfig {
 
         return setDocketCommonConfig(docket, "[buyOrNot] API", "살까말까 API");
     }
+    
+    @Bean
+    public Docket buyThenApi() {
+        Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .ignoredParameterTypes(FirebaseUser.class)
+                .groupName("buythen").select()
+                .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.buythen")).paths(PathSelectors.any())
+                .build();
+
+        return setDocketCommonConfig(docket, "[buyThen] API", "그때살껄 API");
+    }
 
     /**
      * Set Docket Common Config
