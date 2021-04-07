@@ -13,8 +13,8 @@ import lombok.Data;
 public class BuyThenForm {
 
     @NotBlank
-    @ApiModelProperty(notes = "투자 시기", example = "1년 전")
-    private InvestDate date;
+    @ApiModelProperty(notes = "투자 시기", example = "YEAR1", required = true)
+    private InvestDate investDate;
 
     @NotBlank
     @ApiModelProperty(notes = "종목코드", example = "005930")

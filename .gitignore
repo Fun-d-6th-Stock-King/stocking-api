@@ -31,3 +31,5 @@ bin
 docs/gradle-getting-started
 docs/tmp
 .vscode/
+
+.temp*

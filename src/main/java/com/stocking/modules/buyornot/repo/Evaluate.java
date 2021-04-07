@@ -13,10 +13,12 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "evaluate")
+@NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)

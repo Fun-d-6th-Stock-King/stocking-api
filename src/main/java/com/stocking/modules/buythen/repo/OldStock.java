@@ -1,4 +1,4 @@
-package com.stocking.modules.buythen;
+package com.stocking.modules.buythen.repo;
 
 import java.math.BigDecimal;
 

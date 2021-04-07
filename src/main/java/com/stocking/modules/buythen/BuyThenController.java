@@ -19,17 +19,15 @@ public class BuyThenController {
     @Autowired
     private BuyThenService buyThenService;
     
-    @ApiOperation(
-        value = "종목 수익률 계산기",
-        notes = "메인 계산기",
-        response = BuyThen.class
-    )
+    @ApiOperation(value = "kospi 종목 목록 불러오기", notes = "종목 목록 불러오기", response = StockRes.class)
     @GetMapping
-    public ResponseEntity<Object> calculate(
-        @ModelAttribute BuyThenForm buyThenForm
-    ) throws Exception {
-        return new ResponseEntity<>(
-                buyThenService.getPastStock(buyThenForm),
-                HttpStatus.OK);
+    public ResponseEntity<Object> getStockList() throws Exception {
+        return new ResponseEntity<>(buyThenService.getStockList(), HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "종목 수익률 계산기", notes = "메인 계산기", response = BuyThenRes.class)
+    @GetMapping("/calculate")
+    public ResponseEntity<Object> calculate(@ModelAttribute BuyThenForm buyThenForm) throws Exception {
+        return new ResponseEntity<>(buyThenService.getPastStock(buyThenForm), HttpStatus.OK);
     }
 }

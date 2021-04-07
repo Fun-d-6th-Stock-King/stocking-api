@@ -66,4 +66,5 @@ public class Stock implements Serializable {
     @Column(name = "market")
     @ApiModelProperty(notes = "시장구분", position = 11)
     private String market;
+    
 }
