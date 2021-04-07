@@ -22,6 +22,7 @@ public class BuyOrNotRes {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @Builder
     public static class SimpleEvaluation {
         
         private long id;

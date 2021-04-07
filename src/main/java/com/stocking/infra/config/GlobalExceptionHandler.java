@@ -30,12 +30,12 @@ public class GlobalExceptionHandler {
         httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         String errorMessage = exception.getLocalizedMessage();
 
+        resultMap.put("message", errorMessage);
         if (exception instanceof ServletRequestBindingException) {
             if(errorMessage.contains(USER_MISSING)) {
-                resultMap.put("detailMessage", "헤더에 JWT 토큰을 추가해주세요. 발급: https://keehyun2.github.io/google-login.html");
+                resultMap.put("solution", "헤더에 JWT 토큰을 추가해주세요. 발급: https://keehyun2.github.io/google-login.html");
             }
         }
-        resultMap.put("errorMessage", errorMessage);
         
         return resultMap;
     }
