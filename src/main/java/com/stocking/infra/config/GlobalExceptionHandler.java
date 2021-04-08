@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,10 +31,10 @@ public class GlobalExceptionHandler {
         httpServletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         String errorMessage = exception.getLocalizedMessage();
 
-        resultMap.put("message", errorMessage);
+        resultMap.put("message", Optional.ofNullable(errorMessage).orElse("API 서버의 상세로그를 확인하세요."));
         if (exception instanceof ServletRequestBindingException) {
             if(errorMessage.contains(USER_MISSING)) {
-                resultMap.put("solution", "헤더에 JWT 토큰을 추가해주세요. 발급: https://keehyun2.github.io/google-login.html");
+                resultMap.put("solution", "헤더에 firebase 토큰을 추가해주세요. 발급: https://keehyun2.github.io/google-login.html");
             }
         }
         

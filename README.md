@@ -18,4 +18,4 @@
 # 배포 환경
 
 - develop branch : [https://dev-stocking.herokuapp.com/swagger-ui.html]( https://dev-stocking.herokuapp.com/swagger-ui.html) **자동 배포**
-- main branch : [http://stockking.gq/swagger-ui.html](http://stockking.gq/swagger-ui.html) **수동 배포**
+- main branch : [https://stock-king.gq/swagger-ui.html](https://stock-king.gq/swagger-ui.html) **수동 배포**
