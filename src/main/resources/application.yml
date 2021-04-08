@@ -4,6 +4,8 @@ spring:
     active: local
     include: oauth
 
+spring.cache.jcache.config: classpath:ehcache.xml
+
 hibernate:
   dialect: org.hibernate.dialect.PostgreSQL9Dialect
   showSql: true

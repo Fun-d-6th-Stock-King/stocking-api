@@ -2,7 +2,6 @@ package com.stocking.modules.buythen;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -12,14 +11,14 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.stocking.infra.common.StockUtils;
+import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.modules.buythen.BuyThenRes.CalculationResult;
 import com.stocking.modules.buythen.StockRes.Company;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
 import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
-
-import yahoofinance.YahooFinance;
 
 @Service
 public class BuyThenService {
@@ -29,6 +28,9 @@ public class BuyThenService {
     
     @Autowired
     private StocksPriceRepository stocksPriceRepository;
+    
+    @Autowired
+    private StockUtils stockUtils;
     
     /**
      * kospi 상장기업 전체 조회
@@ -95,12 +97,10 @@ public class BuyThenService {
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
         
-        yahoofinance.Stock yahooStock = YahooFinance.get(code + ".KS");
+        RealTimeStock realTimeStock = stockUtils.getStockInfo(code);
         
-        BigDecimal currentPrice = yahooStock.getQuote().getPrice(); // 현재가 - 실시간정보 호출
-        
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy MMM dd HH:mm:ss");
-        String lastTradeTime = sdf.format(yahooStock.getQuote().getLastTradeTime().getTime());
+        BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
+        String lastTradeTime = realTimeStock.getLastTradeTime();
         
         BigDecimal holdingStock = investPrice.divide(oldStockPrice, MathContext.DECIMAL32);     // 내가 산 주식 개수 
         BigDecimal yieldPrice = holdingStock.multiply(currentPrice); // 수익금 = (투자금/이전종가) * 현재가
