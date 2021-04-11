@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @Builder
-public class BuyThenRes {
+public class CalculatedRes {
 
     @ApiModelProperty(notes = "종목 코드", required=false, position=1)
     private String code;    
@@ -21,13 +21,13 @@ public class BuyThenRes {
     @ApiModelProperty(notes = "마지막 거래 일시", required=false, position=4)
     private String lastTradingDateTime;
     
-    @ApiModelProperty(notes = "계산결과", required=false, position=5)
-    private CalculationResult calculationResult; 
+    @ApiModelProperty(notes = "계산 결과", required=false, position=5)
+    private CalculatedValue calculatedValue;
     
     @Data
     @AllArgsConstructor
     @Builder
-    public static class CalculationResult{
+    public static class CalculatedValue {
         @ApiModelProperty(notes = "투자시기", required=false, position=1)
         private String investDate;
         @ApiModelProperty(notes = "투자금", required=false, position=2)

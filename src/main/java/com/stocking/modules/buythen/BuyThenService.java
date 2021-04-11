@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
-import com.stocking.modules.buythen.BuyThenRes.CalculationResult;
+import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
 import com.stocking.modules.buythen.StockRes.Company;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
@@ -60,8 +60,8 @@ public class BuyThenService {
      * @return
      * @throws Exception
      */
-    public BuyThenRes getPastStock(BuyThenForm buyThenForm) throws Exception {
-        BuyThenRes result;
+    public CalculatedRes getPastStock(BuyThenForm buyThenForm) throws Exception {
+        CalculatedRes result;
         
         Stock stock = stockRepository.findByCode(buyThenForm.getCode())
                 .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
@@ -96,7 +96,7 @@ public class BuyThenService {
             case YEAR10 -> stockPrice.getDateY10();
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
-        
+
         RealTimeStock realTimeStock = stockUtils.getStockInfo(code);
         
         BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
@@ -134,13 +134,13 @@ public class BuyThenService {
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
         
-        result = BuyThenRes.builder()
+        result = CalculatedRes.builder()
             .code(code)
             .company(stock.getCompany())
             .currentPrice(currentPrice)
             .lastTradingDateTime(lastTradeTime)
-            .calculationResult(
-                CalculationResult.builder()
+            .calculatedValue(
+                CalculatedValue.builder()
                     .investPrice(investPrice)
                     .investDate(investDate.getName())
                     .oldPrice(oldStockPrice)

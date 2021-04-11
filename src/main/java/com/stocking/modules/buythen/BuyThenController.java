@@ -25,7 +25,7 @@ public class BuyThenController {
         return new ResponseEntity<>(buyThenService.getStockList(), HttpStatus.OK);
     }
 
-    @ApiOperation(value = "종목 수익률 계산기", notes = "메인 계산기", response = BuyThenRes.class)
+    @ApiOperation(value = "종목 수익률 계산기", notes = "메인 계산기", response = CalculatedRes.class)
     @GetMapping("/calculate")
     public ResponseEntity<Object> calculate(@ModelAttribute BuyThenForm buyThenForm) throws Exception {
         return new ResponseEntity<>(buyThenService.getPastStock(buyThenForm), HttpStatus.OK);
