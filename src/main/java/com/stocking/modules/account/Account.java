@@ -1,5 +1,6 @@
 package com.stocking.modules.account;
 
+import com.stocking.modules.account.Role;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
