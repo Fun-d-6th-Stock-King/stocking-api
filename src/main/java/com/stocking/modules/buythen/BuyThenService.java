@@ -5,6 +5,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
@@ -172,11 +173,17 @@ public class BuyThenService {
         CurrentKospiIndustryRes result;
 
         // 공통
-        String code = buyThenForm.getCode(); // 검색 종목 코드
+        String code = buyThenForm.getCode(); // 검색한 종목 코드
         Stock stock = stockRepository.findByCode(code)
                 .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
 
-        InvestDate investDate = buyThenForm.getInvestDate();
+        InvestDate investDate = buyThenForm.getInvestDate(); // 투자 날
+
+        // 믿고싶지 않은 현재가
+        RealTimeStock realTimeStock = stockUtils.getStockInfo(code);  // 실시간 주식 정보
+        BigDecimal pricePerStock = realTimeStock.getCurrentPrice();   // 실시간 주가
+        BigDecimal stocksPerPrice = pricePerStock.divide(buyThenForm.getInvestPrice()). // 보유 주식 환산
+                setScale(3, RoundingMode.HALF_EVEN);
 
         // 코스피
         String kosCode = "KS11"; // 코스피 종목 코드
@@ -229,36 +236,32 @@ public class BuyThenService {
         RealTimeStock kosRealTimeStock = stockUtils.getStockInfo(kosCode);
         BigDecimal kosCurrentPrice = kosRealTimeStock.getCurrentPrice();    // 코스피 현재 지수
         BigDecimal kosYieldPercent = kosCurrentPrice.subtract(kosOldPrice). // 코스피 상승률
-                divide(kosOldPrice).
+                divide(kosOldPrice, MathContext.DECIMAL32).
                 multiply(new BigDecimal(100));
 
 
-        // 믿고싶지 않은 현재가
-        RealTimeStock realTimeStock = stockUtils.getStockInfo(code);  // 실시간 주식 정보
-        BigDecimal pricePerStock = realTimeStock.getCurrentPrice();   // 실시간 주가
-        BigDecimal stocksPerPrice = pricePerStock.divide(buyThenForm.getInvestPrice()). // 보유 주식 환산
-                setScale(3, RoundingMode.HALF_EVEN);
+
 
 
         // Build
         result = CurrentKospiIndustryRes.builder()
                 .code(code)
                 .company(stock.getCompany())
+                .currentValue(
+                        CurrentValue.builder()
+                                .pricePerStock(pricePerStock)
+                                .stockPerPrice(stocksPerPrice)
+                                .currentTime(realTimeStock.getCurrentTime())
+                                .build())
                 .kospiValue(
                         KospiValue.builder()
                         .yieldPercent(kosYieldPercent)
                         .oldDate(oldDate)
                         .oldStock(kosOldPrice)
                         .currentStock(kosCurrentPrice)
-                        .currentTime(kosRealTimeStock.getLastTradeTime())
+                        .currentTime(kosRealTimeStock.getCurrentTime())
                         .build())
-                .currentValue(
-                        CurrentValue.builder()
-                        .pricePerStock(pricePerStock)
-                        .stockPerPrice(stocksPerPrice)
-                        .currentTime(realTimeStock.getLastTradeTime())
-                        .build()
-                ).build();
+                .build();
 
 
         return result;

@@ -25,6 +25,19 @@ public class CurrentKospiIndustryRes {
     @ApiModelProperty(notes = "현재가 섹션 결과", position = 5)
     private CurrentValue currentValue;
 
+    // 믿고싶지 않은 현재가 섹션 결과값
+    @Data
+    @AllArgsConstructor
+    @Builder
+    public static class CurrentValue {
+        @ApiModelProperty(notes = "1주당 가격", position = 15)
+        private BigDecimal pricePerStock;
+        @ApiModelProperty(notes = "보유 종목수 환산 정보", position = 16)
+        private BigDecimal stockPerPrice;
+        @ApiModelProperty(notes = "현재 시각", position=17)
+        private String currentTime;
+    }
+
     // 코스피 섹션 결과값
     @Data
     @AllArgsConstructor
@@ -55,18 +68,5 @@ public class CurrentKospiIndustryRes {
         private String industryCompanies;
         @ApiModelProperty(notes = "동일업종 기업 수(-4 계산값)", position = 14)
         private String industryCnt;
-    }
-
-    // 믿고싶지 않은 현재가 섹션 결과값
-    @Data
-    @AllArgsConstructor
-    @Builder
-    public static class CurrentValue {
-        @ApiModelProperty(notes = "1주당 가격", position = 15)
-        private BigDecimal pricePerStock;
-        @ApiModelProperty(notes = "보유 종목수 환산 정보", position = 16)
-        private BigDecimal stockPerPrice;
-        @ApiModelProperty(notes = "현재 시각", position=17)
-        private String currentTime;
     }
 }
