@@ -30,4 +30,10 @@ public class BuyThenController {
     public ResponseEntity<Object> calculate(@ModelAttribute BuyThenForm buyThenForm) throws Exception {
         return new ResponseEntity<>(buyThenService.getPastStock(buyThenForm), HttpStatus.OK);
     }
+
+    @ApiOperation(value = "현재가, 코스피, 동종업 정보 불러오기", notes = "현재가, 코스피, 동종업", response = CurrentKospiIndustryRes.class)
+    @GetMapping("/current-kospi-industry")
+    public ResponseEntity<Object> getCurrentKospiIndustry(@ModelAttribute BuyThenForm buyThenForm) throws Exception {
+        return new ResponseEntity<>(buyThenService.getCurrentKospiIndustry(buyThenForm), HttpStatus.OK);
+    }
 }

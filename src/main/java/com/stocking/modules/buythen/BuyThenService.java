@@ -2,6 +2,7 @@ package com.stocking.modules.buythen;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +19,7 @@ import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
+import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
 import com.stocking.modules.buythen.StockRes.Company;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
@@ -178,7 +180,6 @@ public class BuyThenService {
 
         // 코스피
         String kosCode = "KS11"; // 코스피 종목 코드
-        RealTimeStock kosCurrentStock = stockUtils.getStockInfo(kosCode);
         Stock kosStock = stockRepository.findByCode(kosCode)
                 .orElseThrow(() -> new Exception(
                         "코스피 종목코드(" + kosCode + ")가 올바르지 않습니다.")
@@ -225,10 +226,19 @@ public class BuyThenService {
             );
         };
 
-        BigDecimal kosCurrentPrice = kosCurrentStock.getCurrentPrice();     // 코스피 현재 지수
+        RealTimeStock kosRealTimeStock = stockUtils.getStockInfo(kosCode);
+        BigDecimal kosCurrentPrice = kosRealTimeStock.getCurrentPrice();    // 코스피 현재 지수
         BigDecimal kosYieldPercent = kosCurrentPrice.subtract(kosOldPrice). // 코스피 상승률
                 divide(kosOldPrice).
                 multiply(new BigDecimal(100));
+
+
+        // 믿고싶지 않은 현재가
+        RealTimeStock realTimeStock = stockUtils.getStockInfo(code);  // 실시간 주식 정보
+        BigDecimal pricePerStock = realTimeStock.getCurrentPrice();   // 실시간 주가
+        BigDecimal stocksPerPrice = pricePerStock.divide(buyThenForm.getInvestPrice()). // 보유 주식 환산
+                setScale(3, RoundingMode.HALF_EVEN);
+
 
         // Build
         result = CurrentKospiIndustryRes.builder()
@@ -240,9 +250,16 @@ public class BuyThenService {
                         .oldDate(oldDate)
                         .oldStock(kosOldPrice)
                         .currentStock(kosCurrentPrice)
-                        .currentTime(kosCurrentStock.getLastTradeTime())
+                        .currentTime(kosRealTimeStock.getLastTradeTime())
+                        .build())
+                .currentValue(
+                        CurrentValue.builder()
+                        .pricePerStock(pricePerStock)
+                        .stockPerPrice(stocksPerPrice)
+                        .currentTime(realTimeStock.getLastTradeTime())
                         .build()
                 ).build();
+
 
         return result;
     }
