@@ -2,18 +2,22 @@ package com.stocking.modules.buythen;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.hamcrest.number.BigDecimalCloseTo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
+import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
 import com.stocking.modules.buythen.StockRes.Company;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
@@ -153,6 +157,93 @@ public class BuyThenService {
                     .build()
             ).build();
         
+        return result;
+    }
+
+    /**
+     * kospi, 동종업종, 현재가 결과 조회
+     * @return
+     * @throws Exception
+     */
+
+    public CurrentKospiIndustryRes getCurrentKospiIndustry(BuyThenForm buyThenForm) throws Exception {
+        CurrentKospiIndustryRes result;
+
+        // 공통
+        String code = buyThenForm.getCode(); // 검색 종목 코드
+        Stock stock = stockRepository.findByCode(code)
+                .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+
+        InvestDate investDate = buyThenForm.getInvestDate();
+
+        // 코스피
+        String kosCode = "KS11"; // 코스피 종목 코드
+        RealTimeStock kosCurrentStock = stockUtils.getStockInfo(kosCode);
+        Stock kosStock = stockRepository.findByCode(kosCode)
+                .orElseThrow(() -> new Exception(
+                        "코스피 종목코드(" + kosCode + ")가 올바르지 않습니다.")
+                );
+        StocksPrice kosStockPrice = stocksPriceRepository.findByStocksId(kosStock.getId())
+                .orElseThrow(() -> new Exception(
+                        "코스피 종목코드(" + kosCode + ")가 올바르지 않습니다.")
+                );
+
+        BigDecimal kosOldPrice; // 코스피 과거 지수
+        String oldDate;         // 검색한 과거 날짜
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.");
+        switch(investDate) {
+            case DAY1 -> {
+                kosOldPrice = kosStockPrice.getPrice();
+                oldDate = kosStockPrice.getLastTradeDate().format(dateFormatter);
+            }
+            case WEEK1 -> {
+                kosOldPrice = kosStockPrice.getPriceW1();
+                oldDate = kosStockPrice.getDateW1().format(dateFormatter);
+            }
+            case MONTH1 -> {
+                kosOldPrice = kosStockPrice.getPriceM1();
+                oldDate = kosStockPrice.getDateM1().format(dateFormatter);
+            }
+            case MONTH6 -> {
+                kosOldPrice = kosStockPrice.getPriceM6();
+                oldDate = kosStockPrice.getDateM6().format(dateFormatter);
+            }
+            case YEAR1 -> {
+                kosOldPrice = kosStockPrice.getPriceY1();
+                oldDate = kosStockPrice.getDateY1().format(dateFormatter);
+            }
+            case YEAR5 -> {
+                kosOldPrice = kosStockPrice.getPriceY5();
+                oldDate = kosStockPrice.getDateY5().format(dateFormatter);
+            }
+            case YEAR10 -> {
+                kosOldPrice = kosStockPrice.getPriceY10();
+                oldDate = kosStockPrice.getDateY10().format(dateFormatter);
+            }
+            default -> throw new IllegalArgumentException(
+                    "Unexpected value: " + investDate
+            );
+        };
+
+        BigDecimal kosCurrentPrice = kosCurrentStock.getCurrentPrice();     // 코스피 현재 지수
+        BigDecimal kosYieldPercent = kosCurrentPrice.subtract(kosOldPrice). // 코스피 상승률
+                divide(kosOldPrice).
+                multiply(new BigDecimal(100));
+
+        // Build
+        result = CurrentKospiIndustryRes.builder()
+                .code(code)
+                .company(stock.getCompany())
+                .kospiValue(
+                        KospiValue.builder()
+                        .yieldPercent(kosYieldPercent)
+                        .oldDate(oldDate)
+                        .oldStock(kosOldPrice)
+                        .currentStock(kosCurrentPrice)
+                        .currentTime(kosCurrentStock.getLastTradeTime())
+                        .build()
+                ).build();
+
         return result;
     }
 }
