@@ -3,6 +3,9 @@ package com.stocking.infra.common;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
@@ -24,13 +27,20 @@ public class StockUtils {
      */
     @Cacheable(value = "stockCache", key = "#code")
     public RealTimeStock getStockInfo(String code) throws IOException{
-        
-        Stock yahooStock = YahooFinance.get(code + ".KS");
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy MMM dd HH:mm:ss");
-        
+        Stock yahooStock;
+        if (code == "KS11") { // kospi 일 때만 symbol 규칙이 변경됨
+            yahooStock = YahooFinance.get("^" + code);
+        } else {
+            yahooStock = YahooFinance.get(code + ".KS");
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MMM.dd. HH:mm:ss");
+        Date now = new Date();
+
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .currentTime(sdf.format(now))
                 .build();
     }
     
@@ -38,7 +48,8 @@ public class StockUtils {
     @AllArgsConstructor
     @Getter
     public static class RealTimeStock{
-        private BigDecimal currentPrice;
-        private String lastTradeTime; 
+        private BigDecimal currentPrice; // 현재 주가
+        private String lastTradeTime;    // 최근 거래 일시
+        private String currentTime;      // 현재가를 업데이트한 시간
     }
 }
