@@ -44,6 +44,12 @@ public class StocksPrice implements Serializable {
     @Column(name = "stocks_id")
     private long stocksId;
 
+    @Column(name = "sector_yahoo")
+    private String sectorYahoo;
+
+    @Column(name = "industry_yahoo")
+    private String industryYahoo;
+
     @Column(name = "price")
     private BigDecimal price;
 

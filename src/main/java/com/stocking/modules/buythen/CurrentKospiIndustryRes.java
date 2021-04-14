@@ -61,12 +61,12 @@ public class CurrentKospiIndustryRes {
     @Builder
     public static class IndustryValue {
         @ApiModelProperty(notes = "업종명", position = 11)
-        private String industryName;
+        private String name;
         @ApiModelProperty(notes = "동일업종 상승률", position = 12)
-        private String industryYieldPercent;
+        private BigDecimal yieldPercent;
         @ApiModelProperty(notes = "동일업종 기업", position = 13)
-        private String industryCompanies;
+        private String companies;
         @ApiModelProperty(notes = "동일업종 기업 수(-4 계산값)", position = 14)
-        private String industryCnt;
+        private int companyCnt;
     }
 }

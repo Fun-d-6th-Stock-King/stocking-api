@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +20,9 @@ import org.springframework.stereotype.Service;
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
-import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
+import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
+import com.stocking.modules.buythen.CurrentKospiIndustryRes.IndustryValue;
 import com.stocking.modules.buythen.StockRes.Company;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
@@ -231,7 +233,7 @@ public class BuyThenService {
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + investDate
             );
-        };
+        }
 
         RealTimeStock kosRealTimeStock = stockUtils.getStockInfo(kosCode);
         BigDecimal kosCurrentPrice = kosRealTimeStock.getCurrentPrice();    // 코스피 현재 지수
@@ -240,7 +242,12 @@ public class BuyThenService {
                 multiply(new BigDecimal(100));
 
 
+        // 동종업계
+        StocksPrice stocksPrice = stocksPriceRepository.findByStocksId(stock.getId())
+                .orElseThrow(() -> new Exception("종목 코드가 올바르지 않습니다."));
 
+        String sector = stocksPrice.getSectorYahoo();
+        List<StocksPrice> companies = stocksPriceRepository.findCompanyBySectorYahoo(sector);
 
 
         // Build
@@ -261,6 +268,14 @@ public class BuyThenService {
                         .currentStock(kosCurrentPrice)
                         .currentTime(kosRealTimeStock.getCurrentTime())
                         .build())
+                .industryValue(
+                        IndustryValue.builder()
+                        .name(sector)
+                        .yieldPercent(kosCurrentPrice)
+                        .companies("test")
+                        .companyCnt(2)
+                        .build()
+                )
                 .build();
 
 
