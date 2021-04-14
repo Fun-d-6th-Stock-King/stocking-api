@@ -247,7 +247,7 @@ public class BuyThenService {
                 .orElseThrow(() -> new Exception("종목 코드가 올바르지 않습니다."));
 
         String sector = stocksPrice.getSectorYahoo();
-        List<StocksPrice> companies = stocksPriceRepository.findCompanyBySectorYahoo(sector);
+        List<StocksPrice> companies = stocksPriceRepository.findBySectorYahoo(sector);
 
 
         // Build
