@@ -25,9 +25,15 @@ public class BuyThenController {
         return new ResponseEntity<>(buyThenService.getStockList(), HttpStatus.OK);
     }
 
-    @ApiOperation(value = "종목 수익률 계산기", notes = "메인 계산기", response = BuyThenRes.class)
+    @ApiOperation(value = "종목 수익률 계산기", notes = "메인 계산기", response = CalculatedRes.class)
     @GetMapping("/calculate")
     public ResponseEntity<Object> calculate(@ModelAttribute BuyThenForm buyThenForm) throws Exception {
         return new ResponseEntity<>(buyThenService.getPastStock(buyThenForm), HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "현재가, 코스피, 동일업 정보 불러오기", notes = "현재가, 코스피, 동일업종", response = CurrentKospiIndustryRes.class)
+    @GetMapping("/current-kospi-industry")
+    public ResponseEntity<Object> getCurrentKospiIndustry(@ModelAttribute BuyThenForm buyThenForm) throws Exception {
+        return new ResponseEntity<>(buyThenService.getCurrentKospiIndustry(buyThenForm), HttpStatus.OK);
     }
 }
