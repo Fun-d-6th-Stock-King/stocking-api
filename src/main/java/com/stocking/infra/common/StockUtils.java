@@ -32,7 +32,7 @@ public class StockUtils {
             yahooStock = YahooFinance.get(code + ".KS");
         }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MMM.dd. HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
         Date now = new Date();
 
         return RealTimeStock.builder()
