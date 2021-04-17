@@ -19,6 +19,8 @@ import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
 import com.stocking.modules.buyornot.vo.BuyOrNotPeriod;
 import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
+import com.stocking.modules.buyornot.vo.BuySellRankRes;
+import com.stocking.modules.buyornot.vo.BuySellRankRes.RankListType;
 import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes;
 
@@ -149,6 +151,22 @@ public class BuyOrNotController {
         
         return new ResponseEntity<>(
                 buyOrNotService.getStockPrice(stockCode, beforeDt, afterDt, interval)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "살까 말까 랭킹 목록(메인)",
+        notes = "살까 말까 랭킹 목록(메인)",
+        response = BuySellRankRes.class
+    )
+    @GetMapping("/getBuyRankList/{buySell}/{rankListType}")
+    public ResponseEntity<Object> getBuyRankList(
+        @ApiParam(value = "BUY, SELL", defaultValue = "BUY") @PathVariable BuySell buySell,
+        @ApiParam(value = "리스트타입", defaultValue = "SIMPLE") @PathVariable RankListType rankListType
+    ) {
+        
+        return new ResponseEntity<>(
+            buyOrNotService.getBuyRankList(buySell, rankListType)
         , HttpStatus.OK);
     }
     

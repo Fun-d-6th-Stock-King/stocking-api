@@ -46,15 +46,9 @@ public class BuyThenController {
         return new ResponseEntity<>(buyThenService.getCurrentKospiIndustry(buyThenForm), HttpStatus.OK);
     }
     
-    @ApiOperation(
-		value = "수익금 계산 이력 목록 조회", 
-		notes = "수익금 계산 이력 목록 조회 - 페이징처리된", 
-		response = CalcHistRes.class
-	)
+    @ApiOperation(value = "수익금 계산 이력 목록 조회", notes = "수익금 계산 이력 목록 조회 - 페이징처리된", response = CalcHistRes.class)
     @GetMapping("/calculation-history")
-    public ResponseEntity<Object> getCalculationHistory (
-    	@ModelAttribute PageParam pageParam
-	) throws Exception {
+    public ResponseEntity<Object> getCalculationHistory(@ModelAttribute PageParam pageParam) throws Exception {
         return new ResponseEntity<>(buyThenService.getCalculationHistory(pageParam), HttpStatus.OK);
     }
 }

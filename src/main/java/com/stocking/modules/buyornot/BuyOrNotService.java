@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.google.common.collect.ImmutableMap;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
@@ -25,6 +24,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -33,17 +33,23 @@ import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
 import com.stocking.modules.buyornot.repo.QEvaluate;
+import com.stocking.modules.buyornot.repo.QEvaluateBuySell;
 import com.stocking.modules.buyornot.repo.QEvaluateComment;
 import com.stocking.modules.buyornot.repo.QEvaluateLike;
 import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
 import com.stocking.modules.buyornot.vo.BuyOrNotPeriod;
 import com.stocking.modules.buyornot.vo.BuyOrNotRes;
 import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
+import com.stocking.modules.buyornot.vo.BuySellRankRes;
+import com.stocking.modules.buyornot.vo.BuySellRankRes.GroupResult;
+import com.stocking.modules.buyornot.vo.BuySellRankRes.RankListType;
+import com.stocking.modules.buyornot.vo.BuySellRankRes.RankTop;
 import com.stocking.modules.buyornot.vo.Comment;
 import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
 import com.stocking.modules.buyornot.vo.StockPriceRes;
+import com.stocking.modules.buythen.repo.QStocksPrice;
 
 import lombok.RequiredArgsConstructor;
 import yahoofinance.Stock;
@@ -442,6 +448,10 @@ public class BuyOrNotService {
             .build();
     }
     
+    /**
+     * 그래프 데이터임. (수정예정 - 캐시 처리하여) 
+     * @param stockCode
+     */
     public StockPriceRes getStockPrice(String stockCode, String beforeDt, String afterDt, Interval interval) throws IOException, ParseException {
         Stock stock = YahooFinance.get(stockCode + ".KS");
         
@@ -469,6 +479,94 @@ public class BuyOrNotService {
                 .minQuote(minQuote)
                 .quoteList(quoteList)
                 .build();
+    }
+    
+    /**
+     * 살래 갯수로 정렬하여 순위 목록 출력(list type - simple(3), detail(10))
+     * @param buySell
+     * @param rankListType
+     * @return
+     */
+    public BuySellRankRes getBuyRankList(BuySell buySell, RankListType rankListType) {
+        QEvaluateBuySell qEvaluateBuySell = QEvaluateBuySell.evaluateBuySell;
+        QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
+        QEvaluate qEvaluate = QEvaluate.evaluate;
+        QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
+        
+        NumberExpression<Long> buyCnt = qEvaluateBuySell.buySell
+            .when(BuySell.BUY).then(1L).otherwise(0L);
+        
+        NumberExpression<Long> sellCnt = qEvaluateBuySell.buySell
+            .when(BuySell.SELL).then(1L).otherwise(0L);
+        
+        NumberPath<Long> buyCntPath = Expressions.numberPath(Long.class, "buyCnt");
+        NumberPath<Long> sellCntPath = Expressions.numberPath(Long.class, "sellCnt");
+        
+        OrderSpecifier<?>[] orderSpecifierList = switch (buySell) {
+            case BUY -> {
+                OrderSpecifier<?>[] arr = {buyCntPath.desc(), sellCntPath.asc(), };
+                yield arr;
+            }
+            case SELL -> {
+                OrderSpecifier<?>[] arr = {sellCntPath.desc(), buyCntPath.asc()};
+                yield arr;
+            }
+            default -> throw new IllegalArgumentException("Unexpected value: " + buySell);
+        };
+        
+        List<GroupResult> groupResultList = queryFactory.select(
+                    Projections.fields(GroupResult.class,
+                        qEvaluateBuySell.code,
+                        ExpressionUtils.as(
+                                JPAExpressions.select(qStocksPrice.company)
+                                    .from(qStocksPrice)
+                                    .where(qStocksPrice.code.eq(qEvaluateBuySell.code)),
+                                "company"),
+                        ExpressionUtils.as(
+                                JPAExpressions.select(qStocksPrice.sectorYahoo)
+                                    .from(qStocksPrice)
+                                    .where(qStocksPrice.code.eq(qEvaluateBuySell.code)),
+                                "sectorYahoo"),
+                        buyCnt.sum().as(buyCntPath),
+                        sellCnt.sum().as(sellCntPath)
+                    )    
+                )
+                .from(qEvaluateBuySell)
+                .groupBy(qEvaluateBuySell.code)
+                .orderBy(orderSpecifierList)
+                .limit(rankListType.getMax())
+                .fetch();
+        
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
+        
+        SimpleEvaluation simpleEvaluation = Optional.ofNullable(queryFactory.select(
+                Projections.fields(SimpleEvaluation.class,
+                    qEvaluate.id,
+                    qEvaluate.code,
+                    qEvaluate.company,
+                    qEvaluate.pros,
+                    qEvaluate.cons,
+                    qEvaluate.createdUid.as("uid"),
+                    ExpressionUtils.as(
+                        JPAExpressions.select(qEvaluateLike.id.count())
+                            .from(qEvaluateLike)
+                            .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
+                        aliasLikeCount)   // 좋아요 횟수
+                )
+            ).from(qEvaluate)
+            .where(qEvaluate.code.eq(groupResultList.get(0).getCode()))
+            .orderBy(aliasLikeCount.desc())
+            .limit(1)
+            .fetchOne()).orElse(SimpleEvaluation.builder().build());
+        
+        return BuySellRankRes.builder()
+            .groupResultList(groupResultList)
+            .rankTop(
+                RankTop.builder()
+                    .pros(simpleEvaluation.getPros())
+                    .cons(simpleEvaluation.getCons())
+                    .build()
+            ).build();
     }
 
 }
