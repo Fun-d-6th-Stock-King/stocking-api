@@ -27,16 +27,17 @@ public class UserInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, 
             Object handler) throws NotFoundException, FirebaseAuthException {
-        
         String token = request.getHeader(TOKEN);
-        log.info("token : " + token);
         if(!StringUtils.isEmpty(token)) {
+        	log.info("token : " + token);
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
             request.setAttribute(USER, FirebaseUser.builder()
                     .email(decodedToken.getEmail())
                     .name(decodedToken.getName())
                     .uid(decodedToken.getUid())
                     .build());
+        }else {
+        	request.setAttribute(USER, FirebaseUser.builder().build());
         }
         
         return true;

@@ -3,6 +3,7 @@ package com.stocking.modules.buythen.repo;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -18,6 +19,7 @@ import javax.persistence.Table;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.google.common.collect.ImmutableMap;
 import com.stocking.modules.stock.Stock;
 
 import lombok.AllArgsConstructor;
@@ -35,7 +37,25 @@ import lombok.NoArgsConstructor;
 public class StocksPrice implements Serializable {
 
     private static final long serialVersionUID = -1293146290479381252L;
-
+    
+    public static final Map<String, String> SECTOR_YAHOO = ImmutableMap.<String, String>builder()
+    		.put("Real Estate", "부동산")
+    		.put("Healthcare", "헬스케어")
+    		.put("Basic Materials", "원자재")
+    		.put("Energy", "에너지")
+    		.put("Industrials", "산업")
+    		.put("Consumer Cyclical", "필수 소비재")
+    		.put("Utilities", "전기/수도")
+    		.put("Technology", "정보기술")
+    		.put("Financial Services", "금융서비스")
+    		.put("Consumer Defensive", "임의 소비재")
+    		.put("Communication Services", "통신/미디어")
+    		.build();
+    
+    public String getSectorKor() {
+    	return SECTOR_YAHOO.get(this.getSectorYahoo());
+    }
+	
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,6 +69,12 @@ public class StocksPrice implements Serializable {
 
     @Column(name = "industry_yahoo")
     private String industryYahoo;
+    
+    @Column(name = "company")
+    private String company;
+
+    @Column(name = "code")
+    private String code;
 
     @Column(name = "price")
     private BigDecimal price;

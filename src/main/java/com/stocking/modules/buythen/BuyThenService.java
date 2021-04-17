@@ -3,27 +3,32 @@ package com.stocking.modules.buythen;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.hamcrest.number.BigDecimalCloseTo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.stocking.infra.common.FirebaseUser;
+import com.stocking.infra.common.PageInfo;
+import com.stocking.infra.common.PageParam;
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
+import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
-import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.IndustryValue;
+import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
 import com.stocking.modules.buythen.StockRes.Company;
+import com.stocking.modules.buythen.repo.CalcHist;
+import com.stocking.modules.buythen.repo.CalcHistRepository;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
 import com.stocking.modules.stock.Stock;
@@ -31,6 +36,7 @@ import com.stocking.modules.stock.StockRepository;
 
 @Service
 public class BuyThenService {
+	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
 
     @Autowired
     private StockRepository stockRepository;
@@ -40,6 +46,9 @@ public class BuyThenService {
     
     @Autowired
     private StockUtils stockUtils;
+    
+    @Autowired
+    private CalcHistRepository calcHistRepository;
     
     /**
      * kospi 상장기업 전체 조회
@@ -69,9 +78,7 @@ public class BuyThenService {
      * @return
      * @throws Exception
      */
-    public CalculatedRes getPastStock(BuyThenForm buyThenForm) throws Exception {
-        CalculatedRes result;
-        
+    public CalculatedRes getPastStock(BuyThenForm buyThenForm, FirebaseUser user) throws Exception {
         Stock stock = stockRepository.findByCode(buyThenForm.getCode())
                 .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
         
@@ -143,7 +150,24 @@ public class BuyThenService {
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
         
-        result = CalculatedRes.builder()
+        // 계산이력 저장
+        calcHistRepository.save(
+    		CalcHist.builder()
+    			.code(code)
+    			.company(stockPrice.getCompany())
+    			.createdUid(user.getUid())
+    			.investDate(oldCloseDate)
+    			.investDateName(investDate.getName())
+    			.investPrice(investPrice)
+    			.yieldPrice(yieldPrice)
+    			.yieldPercent(yieldPercent)
+    			.price(currentPrice)
+    			.sector(stockPrice.getSectorYahoo())
+    			.sectorKor(stockPrice.getSectorKor())
+    			.build()
+		);
+        
+        return CalculatedRes.builder()
             .code(code)
             .company(stock.getCompany())
             .currentPrice(currentPrice)
@@ -162,7 +186,6 @@ public class BuyThenService {
                     .build()
             ).build();
         
-        return result;
     }
 
     /**
@@ -241,14 +264,12 @@ public class BuyThenService {
                 divide(kosOldPrice, MathContext.DECIMAL32).
                 multiply(new BigDecimal(100));
 
-
         // 동종업계
         StocksPrice stocksPrice = stocksPriceRepository.findByStocksId(stock.getId())
                 .orElseThrow(() -> new Exception("종목 코드가 올바르지 않습니다."));
 
         String sector = stocksPrice.getSectorYahoo();
         List<StocksPrice> companies = stocksPriceRepository.findBySectorYahoo(sector);
-
 
         // Build
         result = CurrentKospiIndustryRes.builder()
@@ -278,7 +299,39 @@ public class BuyThenService {
                 )
                 .build();
 
-
         return result;
+    }
+    
+    /**
+     * 모든 사용자의 계산이력 목록 조회
+     * @param PageParam
+     * @return
+     * @throws Exception
+     */
+    public CalcHistRes getCalculationHistory(PageParam pageParam) throws Exception {
+        Page<CalcHist> page = calcHistRepository.findAll(PageRequest.of(pageParam.getPage().intValue(),
+                pageParam.getSize().intValue(), Sort.by(Direction.DESC, "createdDate")));
+
+        List<CalculationHist> calculationHistList = page.getContent().stream().map(vo -> {
+            return CalculationHist.builder().id(vo.getId()).code(vo.getCode()).company(vo.getCompany())
+                    .createdUid(vo.getCreatedUid())
+                    .createdDate(vo.getCreatedDate().format(DateTimeFormatter.ofPattern(FORMAT)))
+                    .investDate(vo.getInvestDate().format(DateTimeFormatter.ofPattern(FORMAT)))
+                    .investDateName(vo.getInvestDateName()).investPrice(vo.getInvestPrice()).price(vo.getPrice())
+                    .sector(vo.getSector()).sectorKor(vo.getSectorKor()).yieldPrice(vo.getYieldPrice())
+                    .yieldPercent(vo.getYieldPercent()).build();
+        }).collect(Collectors.toList());
+
+        return CalcHistRes
+                .builder()
+                .calculationHistList(calculationHistList)
+                .pageInfo(
+                    PageInfo.builder()
+                        .count(page.getTotalElements())
+                        .pageNo(page.getNumber())
+                        .pageSize(page.getSize())
+                        .build()
+                )
+                .build();
     }
 }

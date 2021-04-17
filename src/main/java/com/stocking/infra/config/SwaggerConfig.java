@@ -185,7 +185,7 @@ public class SwaggerConfig {
     }
 
 	private ApiKey apiKey() {
-        return new ApiKey("Firebase Token", "Authorization", "header");
+        return new ApiKey("JWT", "Authorization", "header");
     }
 	
 	private SecurityContext securityContext() {

@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiParam;
 import lombok.Data;
 
 @Data
-public abstract class PageParam {
+public class PageParam {
 
     @ApiParam(value = "페이지 번호", defaultValue = "0", required = true)
     @Min(value = 0, message = "페이지 번호는  0보다 커야합니다.")
