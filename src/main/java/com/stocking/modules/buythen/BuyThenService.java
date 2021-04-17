@@ -16,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.querydsl.core.types.Projections;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
 import com.stocking.infra.common.PageParam;
@@ -27,8 +29,10 @@ import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.IndustryValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
 import com.stocking.modules.buythen.StockRes.Company;
+import com.stocking.modules.buythen.YieldSortRes.YieldSort;
 import com.stocking.modules.buythen.repo.CalcHist;
 import com.stocking.modules.buythen.repo.CalcHistRepository;
+import com.stocking.modules.buythen.repo.QStocksPrice;
 import com.stocking.modules.buythen.repo.StocksPrice;
 import com.stocking.modules.buythen.repo.StocksPriceRepository;
 import com.stocking.modules.stock.Stock;
@@ -49,6 +53,9 @@ public class BuyThenService {
     
     @Autowired
     private CalcHistRepository calcHistRepository;
+    
+    @Autowired
+    private JPAQueryFactory queryFactory;
     
     /**
      * kospi 상장기업 전체 조회
@@ -269,7 +276,7 @@ public class BuyThenService {
                 .orElseThrow(() -> new Exception("종목 코드가 올바르지 않습니다."));
 
         String sector = stocksPrice.getSectorYahoo();
-        List<StocksPrice> companies = stocksPriceRepository.findBySectorYahoo(sector);
+//        List<StocksPrice> companies = stocksPriceRepository.findBySectorYahoo(sector);
 
         // Build
         result = CurrentKospiIndustryRes.builder()
@@ -334,4 +341,31 @@ public class BuyThenService {
                 )
                 .build();
     }
+    
+    /**
+     * 기간별 수익률로 정렬시킨 목록 조회(투자기간, 정렬방향)
+     * @param pageParam
+     * @return
+     */
+    public YieldSortRes getYieldSortList(InvestDate investDate, Sort sort) {
+        if(InvestDate.DAY1 == investDate) { 
+            // 1일 전 수익률은 계속 바뀌는 현재가랑 재계산을 종목 갯수만큼 해야해서 보류...? 
+            return YieldSortRes.builder().build();
+        }
+        
+        QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
+        
+        queryFactory.select(
+            Projections.fields(YieldSort.class,
+                qStocksPrice.id,
+                qStocksPrice.code,
+                qStocksPrice.company,
+                qStocksPrice.sectorYahoo.as("sector")
+            )
+        ).from(qStocksPrice);
+        
+        return YieldSortRes.builder()
+                .build();
+    }
+    
 }
