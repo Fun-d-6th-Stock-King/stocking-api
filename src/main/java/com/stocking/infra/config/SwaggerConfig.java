@@ -83,6 +83,17 @@ public class SwaggerConfig {
 
         return setDocketCommonConfig(docket, "[buyThen] API", "그때살껄 API");
     }
+    
+    @Bean
+    public Docket todayWordApi() {
+        Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .ignoredParameterTypes(FirebaseUser.class)
+                .groupName("todayWord").select()
+                .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.todayword")).paths(PathSelectors.any())
+                .build();
+
+        return setDocketCommonConfig(docket, "[todayWord] API", "오늘의단어 API");
+    }
 
     /**
      * Set Docket Common Config

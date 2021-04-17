@@ -23,7 +23,7 @@ import io.swagger.annotations.ApiOperation;
 
 @RequestMapping(value = "/api/evaluate")
 @RestController
-@Api(value = "BuyOrNotController", tags = "평가하기")
+@Api(value = "EvaluateController", tags = "평가하기")
 public class EvaluateController {
     
     @Autowired
