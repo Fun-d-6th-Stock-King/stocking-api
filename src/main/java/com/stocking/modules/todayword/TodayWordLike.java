@@ -14,16 +14,17 @@ import javax.persistence.Table;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import com.google.auto.value.AutoValue.Builder;
-
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "today_word_like")
 @EntityListeners(AuditingEntityListener.class)
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @Getter
 public class TodayWordLike implements Serializable {
@@ -38,7 +39,7 @@ public class TodayWordLike implements Serializable {
 
     @Column(name = "today_word_id")
     @ApiModelProperty(notes = "단어 id", position = 2)
-    private String todayWordId;
+    private long todayWordId;
 
     @Column(name = "created_uid")
     private String createdUid;

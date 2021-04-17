@@ -308,7 +308,7 @@ public class BuyThenService {
      * @return
      * @throws Exception
      */
-    public CalcHistRes getCalculationHistory(PageParam pageParam) throws Exception {
+    public CalcHistRes getCalculationHistory(PageParam pageParam) {
         Page<CalcHist> page = calcHistRepository.findAll(PageRequest.of(pageParam.getPage().intValue(),
                 pageParam.getSize().intValue(), Sort.by(Direction.DESC, "createdDate")));
 

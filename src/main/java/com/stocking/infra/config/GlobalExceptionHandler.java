@@ -13,13 +13,16 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.google.firebase.auth.FirebaseAuthException;
+
 import lombok.extern.slf4j.Slf4j;
 
 @ControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
     
-    private static final String USER_MISSING = "of type FirebaseUser";
+    private static final String AUTHORIZATION_MISSING = "Missing request header 'Authorization' for method parameter of type String";
+    private static final String FAIL_PARSE_TOKEN = "Failed to parse Firebase ID token";
 
     @ExceptionHandler(value = {Exception.class, RuntimeException.class})
     @ResponseBody
@@ -33,8 +36,12 @@ public class GlobalExceptionHandler {
 
         resultMap.put("message", Optional.ofNullable(errorMessage).orElse("API 서버의 상세로그를 확인하세요."));
         if (exception instanceof ServletRequestBindingException) {
-            if(errorMessage.contains(USER_MISSING)) {
+            if(errorMessage.equals(AUTHORIZATION_MISSING)) {
                 resultMap.put("solution", "헤더에 firebase 토큰을 추가해주세요. 발급: https://keehyun2.github.io/google-login.html");
+            }
+        }else if(exception instanceof FirebaseAuthException){
+            if(errorMessage.contains(FAIL_PARSE_TOKEN)) {
+                resultMap.put("solution", "정확한 token 인지 확인해주세요");
             }
         }
         
