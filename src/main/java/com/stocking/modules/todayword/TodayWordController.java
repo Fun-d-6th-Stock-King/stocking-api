@@ -59,7 +59,7 @@ public class TodayWordController {
     }
     
     @ApiOperation(
-        value = "오늘의 단어 좋아요/안좋아요", 
+        value = "좋아요가 가장많은 오늘의 단어(메인)", 
         response = TodayWordRes.class
     )
     @GetMapping("/topWord")

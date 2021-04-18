@@ -16,13 +16,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
-import com.stocking.infra.common.PageParam;
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
+import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
@@ -315,19 +318,29 @@ public class BuyThenService {
      * @return
      * @throws Exception
      */
-    public CalcHistRes getCalculationHistory(PageParam pageParam) {
-        Page<CalcHist> page = calcHistRepository.findAll(PageRequest.of(pageParam.getPage().intValue(),
-                pageParam.getSize().intValue(), Sort.by(Direction.DESC, "createdDate")));
+    public CalcHistRes getCalculationHistory(int pageSize, int pageNo) {
+        Page<CalcHist> page = calcHistRepository.findAll(PageRequest.of(pageNo - 1,
+                pageSize, Sort.by(Direction.DESC, "createdDate")));
 
-        List<CalculationHist> calculationHistList = page.getContent().stream().map(vo -> {
-            return CalculationHist.builder().id(vo.getId()).code(vo.getCode()).company(vo.getCompany())
+        List<CalculationHist> calculationHistList = page.getContent()
+            .stream()
+            .map(vo -> {
+                return CalculationHist.builder()
+                    .id(vo.getId())
+                    .code(vo.getCode())
+                    .company(vo.getCompany())
                     .createdUid(vo.getCreatedUid())
                     .createdDate(vo.getCreatedDate().format(DateTimeFormatter.ofPattern(FORMAT)))
                     .investDate(vo.getInvestDate().format(DateTimeFormatter.ofPattern(FORMAT)))
-                    .investDateName(vo.getInvestDateName()).investPrice(vo.getInvestPrice()).price(vo.getPrice())
-                    .sector(vo.getSector()).sectorKor(vo.getSectorKor()).yieldPrice(vo.getYieldPrice())
-                    .yieldPercent(vo.getYieldPercent()).build();
-        }).collect(Collectors.toList());
+                    .investDateName(vo.getInvestDateName())
+                    .investPrice(vo.getInvestPrice())
+                    .price(vo.getPrice())
+                    .sector(vo.getSector())
+                    .sectorKor(vo.getSectorKor())
+                    .yieldPrice(vo.getYieldPrice())
+                    .yieldPercent(vo.getYieldPercent())
+                    .build();
+            }).collect(Collectors.toList());
 
         return CalcHistRes
                 .builder()
@@ -347,25 +360,89 @@ public class BuyThenService {
      * @param pageParam
      * @return
      */
-    public YieldSortRes getYieldSortList(InvestDate investDate, Sort sort) {
+    public YieldSortRes getYieldSortList(InvestDate investDate, BuySell buySell, int pageSize, int pageNo) {
         if(InvestDate.DAY1 == investDate) { 
             // 1일 전 수익률은 계속 바뀌는 현재가랑 재계산을 종목 갯수만큼 해야해서 보류...? 
             return YieldSortRes.builder().build();
         }
         
+        // q class
         QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
         
-        queryFactory.select(
+        NumberPath<BigDecimal> oldPrice = qStocksPrice.priceW1;
+        DateTimePath<LocalDateTime> oldDate = qStocksPrice.dateW1;
+        NumberPath<BigDecimal> yieldPercent = qStocksPrice.yieldW1;
+        
+        switch (investDate) {
+            case WEEK1 -> {}
+            case MONTH1 -> {
+                oldPrice = qStocksPrice.priceM1;
+                oldDate = qStocksPrice.dateM1;
+                yieldPercent = qStocksPrice.yieldM1;
+            }
+            case MONTH6 -> {
+                oldPrice = qStocksPrice.priceM6;
+                oldDate = qStocksPrice.dateM6;
+                yieldPercent = qStocksPrice.yieldM6;
+            }
+            case YEAR1 -> {
+                oldPrice = qStocksPrice.priceY1;
+                oldDate = qStocksPrice.dateY1;
+                yieldPercent = qStocksPrice.yieldY1;
+            }
+            case YEAR5 -> {
+                oldPrice = qStocksPrice.priceY5;
+                oldDate = qStocksPrice.dateY5;
+                yieldPercent = qStocksPrice.yieldY5;
+            }
+            case YEAR10 -> {
+                oldPrice = qStocksPrice.priceY10;
+                oldDate = qStocksPrice.dateY10;
+                yieldPercent = qStocksPrice.yieldY10;
+            }
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+        };
+        
+        OrderSpecifier<?> order = switch (buySell) {
+            case BUY -> yieldPercent.desc();
+            case SELL -> yieldPercent.asc();
+            default -> throw new IllegalArgumentException("Unexpected value: " + buySell);
+        };
+        
+        List<YieldSort> yieldSortList = queryFactory.select(
             Projections.fields(YieldSort.class,
                 qStocksPrice.id,
                 qStocksPrice.code,
                 qStocksPrice.company,
-                qStocksPrice.sectorYahoo.as("sector")
+                qStocksPrice.sectorYahoo.as("sector"),
+                qStocksPrice.sectorYahoo.as("sectorKor"),
+                oldPrice.as("oldPrice"),
+                oldDate.as("oldDate"),
+                yieldPercent.as("yieldPercent"),
+                qStocksPrice.updatedDate.as("updatedDate"),
+                qStocksPrice.price.as("price")
             )
-        ).from(qStocksPrice);
+        ).from(qStocksPrice)
+        .where(oldDate.isNotNull())
+        .orderBy(order)
+        .offset((pageNo - 1) * pageSize)
+        .limit(pageSize)
+        .fetch();
+        
+        long count = queryFactory.selectFrom(qStocksPrice)
+            .where(oldDate.isNotNull())
+            .fetchCount();
         
         return YieldSortRes.builder()
-                .build();
+                .updatedDate(yieldSortList.get(0).getUpdatedDate())
+                .yieldSortList(yieldSortList)
+                .pageInfo(
+                    PageInfo.builder()
+                    .count(count)
+                    .pageNo(pageNo)
+                    .pageSize(pageSize)
+                    .build()
+                ).build();
     }
     
 }

@@ -1,6 +1,8 @@
 package com.stocking.modules.buythen;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -11,7 +13,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -20,25 +22,23 @@ public class YieldSortRes {
     
     private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
 	
-    @ApiModelProperty(notes = "수익률 정렬 목록", required=false, position=1)
+    @ApiModelProperty(notes = "기준일자", required=false, position=1)
+    private String updatedDate;
+    
+    @ApiModelProperty(notes = "페이지 정보", required=false, position=2)
+    private PageInfo pageInfo;
+    
+    @ApiModelProperty(notes = "수익률 정렬 목록", required=false, position=3)
 	private List<YieldSort> yieldSortList;
 	
-	@ApiModelProperty(notes = "기준일자", required=false, position=1)
-    private LocalDateTime updatedDate;
-	
-	public String getUpdatedDate() {
-	    return updatedDate.format(DateTimeFormatter.ofPattern(FORMAT));
-	}
-	
-	@ApiModelProperty(notes = "페이지 정보", required=false, position=1)
-	private PageInfo pageInfo;
- 
-	@Getter
+	@Data
 	@AllArgsConstructor
 	@Builder
-    public static class YieldSort {
-	    
-    	@ApiModelProperty(notes = "id", required=false, position=1)
+	@NoArgsConstructor
+    public static class YieldSort implements Serializable{
+        private static final long serialVersionUID = 2003993855369613106L;
+
+        @ApiModelProperty(notes = "id", required=false, position=1)
         private long id;
 
     	@ApiModelProperty(notes = "종목코드", required=false, position=2)
@@ -67,7 +67,18 @@ public class YieldSortRes {
         
     	@ApiModelProperty(notes = "현재가(기준일자 기준)", required=false, position=10)
         private BigDecimal price;
+    	
+    	public String getOldDate() {
+            return (oldDate != null) ? oldDate.format(DateTimeFormatter.ofPattern(FORMAT)) : null;
+        }
+    	
+    	public String getUpdatedDate() {
+            return (updatedDate != null) ? updatedDate.format(DateTimeFormatter.ofPattern(FORMAT)) : null;
+        }
         
+    	public BigDecimal getYieldPercent() {
+            return (yieldPercent != null) ? yieldPercent.divide(new BigDecimal(100), MathContext.DECIMAL32) : null;
+        }
     }
     
 }
