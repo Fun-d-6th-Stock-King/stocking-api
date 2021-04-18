@@ -34,10 +34,11 @@ public class StockUtils {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
         Date now = new Date();
-
+        
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .changeInPercent(yahooStock.getQuote().getChangeInPercent())
                 .currentTime(sdf.format(now))
                 .build();
     }
@@ -48,6 +49,30 @@ public class StockUtils {
     public static class RealTimeStock{
         private BigDecimal currentPrice; // 현재 주가
         private String lastTradeTime;    // 최근 거래 일시
+        private BigDecimal changeInPercent;
         private String currentTime;      // 현재가를 업데이트한 시간
     }
+    
+//    @Cacheable(value = "stockHistCache", key = "#code")
+//    public RealTimeStock getStockHistInfo(String code) throws IOException{
+//        Stock yahooStock = YahooFinance.get(code + ".KS");
+//
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
+//        Date now = new Date();
+//
+//        return RealTimeStock.builder()
+//                .currentPrice(yahooStock.getQuote().getPrice())
+//                .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+//                .currentTime(sdf.format(now))
+//                .build();
+//    }
+//    
+//    @Builder
+//    @AllArgsConstructor
+//    @Getter
+//    public static class StockHist{
+//        private BigDecimal currentPrice; // 현재 주가
+//        private String lastTradeTime;    // 최근 거래 일시
+//        private String currentTime;      // 현재가를 업데이트한 시간
+//    }
 }

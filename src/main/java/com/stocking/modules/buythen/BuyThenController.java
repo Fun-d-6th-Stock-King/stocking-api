@@ -73,4 +73,29 @@ public class BuyThenController {
             buyThenService.getYieldSortList(investDate, buySell, pageSize, pageNo)
         , HttpStatus.OK);
     }
+    
+    @ApiOperation(value = "현재가, 현재수익률, historical price", 
+        notes = "현재가, 현재수익률, historical price(5년치, 한달주기)", 
+        response = String.class)
+    @GetMapping("/kospi")
+    public ResponseEntity<Object> getKospiChart(
+    ) throws Exception {
+        return new ResponseEntity<>(
+            buyThenService.getKospiChart()
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(value = "네이버 뉴스 조회", 
+        notes = "검색시 유의사항 - pageSize 10 이면 pageNo 100까지 가능, pageSize 100 이면 pageNo 10까지 가능<br> 현재 한글검색에 오류가 있음 종목코드로 검색", 
+        response = String.class)
+    @GetMapping("/naver-news")
+    public ResponseEntity<Object> getNaverNews(
+        @ApiParam(value = "검색어", defaultValue = "010140", required = true) @RequestParam String query,
+        @ApiParam(value = "페이지 크기(10~100)", defaultValue = "10") @RequestParam(defaultValue = "10") int pageSize,
+        @ApiParam(value = "페이지 번호(10~100)", defaultValue = "1") @RequestParam(defaultValue = "1") int pageNo
+    ) throws Exception {
+        return new ResponseEntity<>(
+            buyThenService.getNaverNews(query, pageNo, pageSize)
+        , HttpStatus.OK);
+    }
 }

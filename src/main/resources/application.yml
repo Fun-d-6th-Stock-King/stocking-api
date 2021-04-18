@@ -16,7 +16,8 @@ logging:
   config: classpath:logback-spring.xml
   level[io.swagger.models.parameters.AbstractSerializableParameter]: error
   level[org.springframework]: INFO
-
+  level[org.springframework.web.client.RestTemplate]: DEBUG
+  
 server:
   port: ${PORT:5000}
 

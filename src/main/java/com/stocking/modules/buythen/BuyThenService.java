@@ -1,11 +1,19 @@
 package com.stocking.modules.buythen;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -14,8 +22,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import com.google.common.collect.ImmutableMap;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.DateTimePath;
@@ -41,6 +55,11 @@ import com.stocking.modules.buythen.repo.StocksPriceRepository;
 import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
+import lombok.Data;
+import yahoofinance.YahooFinance;
+import yahoofinance.histquotes.HistoricalQuote;
+import yahoofinance.histquotes.Interval;
+
 @Service
 public class BuyThenService {
 	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
@@ -59,6 +78,10 @@ public class BuyThenService {
     
     @Autowired
     private JPAQueryFactory queryFactory;
+    
+    @Autowired
+    private RestTemplate restTemplate;
+
     
     /**
      * kospi 상장기업 전체 조회
@@ -438,11 +461,99 @@ public class BuyThenService {
                 .yieldSortList(yieldSortList)
                 .pageInfo(
                     PageInfo.builder()
-                    .count(count)
-                    .pageNo(pageNo)
-                    .pageSize(pageSize)
-                    .build()
+                        .count(count)
+                        .pageNo(pageNo)
+                        .pageSize(pageSize)
+                        .build()
                 ).build();
     }
     
+    /**
+     * 코스피 데이터 출력 - historycal 데이터 캐싱처리 필요(하루주기) 
+     * 현재가, 전일종가와 현재가를 비교한 수익률, historical price(10년치, 한달주기 데이터)
+     * @throws IOException
+     */
+    public Map<String, Object> getKospiChart() throws IOException {
+        yahoofinance.Stock stock = YahooFinance.get("^KS11");
+        
+        Calendar startDt = Calendar.getInstance();
+        Calendar endDt = Calendar.getInstance();
+        startDt.add(Calendar.YEAR, -10);
+        
+        List<HistoricalQuote> quoteList = stock.getHistory(startDt, endDt, Interval.MONTHLY);
+        
+        Comparator<HistoricalQuote> comparatorByClose = 
+                (x1, x2) -> x1.getClose().compareTo(x2.getClose());
+        
+        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
+            .orElseThrow(NoSuchElementException::new);
+        
+        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
+            .orElseThrow(NoSuchElementException::new);
+        
+        return ImmutableMap.<String, Object>builder()
+            .put("currentPrice", stock.getQuote().getPrice())
+            .put("changeInPercent", stock.getQuote().getChangeInPercent())
+            .put("maxQuote", maxQuote)
+            .put("minQuote", minQuote)
+            .put("quoteList", quoteList)
+            .build();
+    }
+    
+    /**
+     * 검색어와 페이지번호 페이지 크기를 전달받아서 뉴스를 반환
+     * max - pageSize 10 이면 pageNo 100까지 가능, pageSize 100 이면 pageNo 10까지 가능, 
+     * @param query
+     * @param pageNo
+     * @param pageSize
+     * @return
+     * @throws UnsupportedEncodingException 
+     */
+    public News getNaverNews(String query, int pageNo, int pageSize) throws UnsupportedEncodingException {
+        
+        HttpHeaders headers = new HttpHeaders();
+//        headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        headers.set("X-Naver-Client-Id", "bQfZm07mCJv9mn22P4hG");
+        headers.set("X-Naver-Client-Secret", "zcDnZCYohs");
+
+        
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromHttpUrl("https://openapi.naver.com/v1/search/news.json")
+                .queryParam("query", query)
+                .queryParam("display", pageSize) // 10(기본값), 100(최대)
+                .queryParam("start", ((pageNo - 1) * pageSize) + 1)    // offset 임 - 1(기본값), 1000(최대)
+                .queryParam("sort", "date").encode(Charset.forName("UTF-8"));
+
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        HttpEntity<News> response = restTemplate.exchange(
+                builder.toUriString(), 
+                HttpMethod.GET, 
+                entity, 
+                News.class);
+        
+        System.out.println(builder.toUriString());
+        
+        return response.getBody();
+    }
+    
+    @Data
+    public static class News implements Serializable {
+        private static final long serialVersionUID = 6281770904300640185L;
+        private String lastBuildDate;
+        private long total;
+        private int start;
+        private int display;
+        private List<Item> items;
+        
+        @Data
+        public static class Item implements Serializable  {
+            private static final long serialVersionUID = 5566600873154194032L;
+            private String title;
+            private String originallink;
+            private String link;
+            private String description;
+            private String pubDate;
+        }
+    }
 }

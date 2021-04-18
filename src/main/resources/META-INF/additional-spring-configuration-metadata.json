@@ -63,5 +63,10 @@
     "name": "logging.level[org.hibernate.type.descriptor.sql]",
     "type": "java.lang.String",
     "description": "A description for 'logging.level[org.hibernate.type.descriptor.sql]'"
+  },
+  {
+    "name": "logging.level[org.springframework.web.client.RestTemplate]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.springframework.web.client.RestTemplate]'"
   }
 ]}
