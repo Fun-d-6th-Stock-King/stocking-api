@@ -1,12 +1,11 @@
 package com.stocking.modules.buythen;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
@@ -25,6 +24,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -39,6 +39,7 @@ import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
+import com.stocking.infra.common.StockUtils.StockHist;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
@@ -55,13 +56,15 @@ import com.stocking.modules.buythen.repo.StocksPriceRepository;
 import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
-import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import yahoofinance.YahooFinance;
 import yahoofinance.histquotes.HistoricalQuote;
 import yahoofinance.histquotes.Interval;
 
 @Service
+@Slf4j
 public class BuyThenService {
+    
 	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
 
     @Autowired
@@ -81,7 +84,6 @@ public class BuyThenService {
     
     @Autowired
     private RestTemplate restTemplate;
-
     
     /**
      * kospi 상장기업 전체 조회
@@ -181,7 +183,7 @@ public class BuyThenService {
                 salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
             }
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
-        };
+        }
         
         // 계산이력 저장
         calcHistRepository.save(
@@ -509,10 +511,10 @@ public class BuyThenService {
      * @return
      * @throws UnsupportedEncodingException 
      */
-    public News getNaverNews(String query, int pageNo, int pageSize) throws UnsupportedEncodingException {
+    public NewsRes getNaverNews(String query, int pageNo, int pageSize) throws UnsupportedEncodingException {
         
         HttpHeaders headers = new HttpHeaders();
-//        headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+        headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
         headers.set("X-Naver-Client-Id", "bQfZm07mCJv9mn22P4hG");
         headers.set("X-Naver-Client-Secret", "zcDnZCYohs");
 
@@ -522,38 +524,42 @@ public class BuyThenService {
                 .queryParam("query", query)
                 .queryParam("display", pageSize) // 10(기본값), 100(최대)
                 .queryParam("start", ((pageNo - 1) * pageSize) + 1)    // offset 임 - 1(기본값), 1000(최대)
-                .queryParam("sort", "date").encode(Charset.forName("UTF-8"));
+                .queryParam("sort", "date").encode(StandardCharsets.UTF_8);
 
         HttpEntity<?> entity = new HttpEntity<>(headers);
 
-        HttpEntity<News> response = restTemplate.exchange(
+        HttpEntity<NewsRes> response = restTemplate.exchange(
                 builder.toUriString(), 
                 HttpMethod.GET, 
                 entity, 
-                News.class);
+                NewsRes.class);
         
-        System.out.println(builder.toUriString());
+        log.info(builder.toUriString());
         
         return response.getBody();
     }
     
-    @Data
-    public static class News implements Serializable {
-        private static final long serialVersionUID = 6281770904300640185L;
-        private String lastBuildDate;
-        private long total;
-        private int start;
-        private int display;
-        private List<Item> items;
+    /**
+     * 삼성(005930),sk하이닉스(000660),카카오(035720),현대자동차(005380) 4가지 종목의 10년 내 최고가 일자, 가격, 현재가 
+     * @throws IOException 
+     */
+    public List<HighPriceRes> getHighPrice() {
         
-        @Data
-        public static class Item implements Serializable  {
-            private static final long serialVersionUID = 5566600873154194032L;
-            private String title;
-            private String originallink;
-            private String link;
-            private String description;
-            private String pubDate;
-        }
+        List<StocksPrice> stockList = stocksPriceRepository
+                .findByCodeInOrderByMarketCapDesc("005930", "000660", "035720", "005380");
+        
+        List<HighPriceRes> highPriceList = stockList.stream()
+            .map(vo -> {
+                StockHist stockHist = stockUtils.getStockHistInfo(vo.getCode());
+                return HighPriceRes.builder()
+                    .code(vo.getCode())
+                    .company(vo.getCompany())
+                    .sector(vo.getSectorYahoo())
+                    .sectorKor(vo.getSectorKor())
+                    .maxQuote(stockHist.getMaxQuote())
+                    .build();
+            }).collect(Collectors.toList());
+        
+        return highPriceList;
     }
 }

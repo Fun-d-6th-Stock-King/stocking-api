@@ -3,7 +3,11 @@ package com.stocking.infra.common;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
@@ -11,10 +15,14 @@ import org.springframework.stereotype.Component;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
+import yahoofinance.histquotes.HistoricalQuote;
+import yahoofinance.histquotes.Interval;
 
 @Component
+@Slf4j
 public class StockUtils {
 
     /**
@@ -25,22 +33,21 @@ public class StockUtils {
      */
     @Cacheable(value = "stockCache", key = "#code")
     public RealTimeStock getStockInfo(String code) throws IOException{
-        Stock yahooStock;
-        if (code == "KS11") { // kospi 일 때만 symbol 규칙이 변경됨
-            yahooStock = YahooFinance.get("^" + code);
-        } else {
-            yahooStock = YahooFinance.get(code + ".KS");
-        }
+        // kospi 일 때만 symbol 규칙이 변경됨
+        Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
         Date now = new Date();
-        
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent())
+                .yearHigh(yahooStock.getQuote().getYearHigh())
+                .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
+                .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
                 .currentTime(sdf.format(now))
                 .build();
+        
     }
     
     @Builder
@@ -51,28 +58,52 @@ public class StockUtils {
         private String lastTradeTime;    // 최근 거래 일시
         private BigDecimal changeInPercent;
         private String currentTime;      // 현재가를 업데이트한 시간
+        
+        private BigDecimal yearHigh;    // 연중 최고가
+        private BigDecimal changeFromYearHigh;  // 연중 최고가와 현재가 차이 금액
+        private BigDecimal changeFromYearHighInPercent; // 연중 최고가와 현재가 차이비율
     }
     
-//    @Cacheable(value = "stockHistCache", key = "#code")
-//    public RealTimeStock getStockHistInfo(String code) throws IOException{
-//        Stock yahooStock = YahooFinance.get(code + ".KS");
-//
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
-//        Date now = new Date();
-//
-//        return RealTimeStock.builder()
-//                .currentPrice(yahooStock.getQuote().getPrice())
-//                .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
-//                .currentTime(sdf.format(now))
-//                .build();
-//    }
-//    
-//    @Builder
-//    @AllArgsConstructor
-//    @Getter
-//    public static class StockHist{
-//        private BigDecimal currentPrice; // 현재 주가
-//        private String lastTradeTime;    // 최근 거래 일시
-//        private String currentTime;      // 현재가를 업데이트한 시간
-//    }
+    /**
+     * 10년 기간내 최고가 정보 (1일 단위 캐시)
+     * @param code
+     * @return
+     * @throws IOException
+     */
+    @Cacheable(value = "stockHistCache", key = "#code")
+    public StockHist getStockHistInfo(String code) {
+        
+        Stock yahooStock = null;
+        List<HistoricalQuote> quoteList = null;
+        
+        Comparator<HistoricalQuote> comparatorByClose = 
+                (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 : x1.getHigh().compareTo(x2.getHigh());
+        
+        try {
+            yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
+            Calendar startDt = Calendar.getInstance();
+            Calendar endDt = Calendar.getInstance();
+            startDt.add(Calendar.YEAR, -10);
+            quoteList = yahooStock.getHistory(startDt, endDt, Interval.DAILY);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error(e.getLocalizedMessage());
+        }
+        
+        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
+            .orElseThrow(NoSuchElementException::new);
+        
+        return StockHist.builder()
+                .code(code)
+                .maxQuote(maxQuote)
+                .build();
+    }
+    
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class StockHist{
+        private String code;
+        private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
+    }
 }
