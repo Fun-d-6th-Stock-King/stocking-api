@@ -22,6 +22,8 @@ public class AccountServiceTest {
     @Autowired
     AccountService accountService;
 
+    public static final int BEST_STOCKS_SIZE = 9;
+
     @DisplayName("유저 가입 성공 체크")
     @Transactional
     @Test
@@ -41,4 +43,15 @@ public class AccountServiceTest {
         //then
         assertTrue(accountList.stream().anyMatch(account -> account.getUuid().equals(123123)));
     }
+
+    @DisplayName("로그인 화면 주식 목록 조회 기능 체크")
+    @Test
+    public void getBestStocksTest() {
+
+        //given
+        //when
+        //then
+        assertTrue(accountService.getBestStocks().size() == BEST_STOCKS_SIZE);
+    }
+
 }
