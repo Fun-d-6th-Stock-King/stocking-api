@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import lombok.NoArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +53,7 @@ public class StockUtils {
     
     @Builder
     @AllArgsConstructor
+    @NoArgsConstructor
     @Getter
     public static class RealTimeStock{
         private BigDecimal currentPrice; // 현재 주가
