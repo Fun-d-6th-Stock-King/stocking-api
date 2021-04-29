@@ -10,14 +10,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stocking.infra.common.FirebaseUser;
+import com.stocking.infra.config.UserInterceptor;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.vo.BuyOrNotOrder;
 import com.stocking.modules.buyornot.vo.BuyOrNotPeriod;
+import com.stocking.modules.buyornot.vo.BuyOrNotRes;
 import com.stocking.modules.buyornot.vo.BuyOrNotRes.SimpleEvaluation;
 import com.stocking.modules.buyornot.vo.BuySellRankRes;
 import com.stocking.modules.buyornot.vo.BuySellRankRes.RankListType;
@@ -27,6 +30,7 @@ import com.stocking.modules.buyornot.vo.EvaluationRes;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import springfox.documentation.annotations.ApiIgnore;
 import yahoofinance.histquotes.Interval;
 
 @RequestMapping(value = "/api/buyornot")
@@ -40,11 +44,11 @@ public class BuyOrNotController {
     @ApiOperation(
         value = "전체 평가 목록",
         notes = "살까 말까 메인 장단점 평가 목록 / param - 검색어, 정렬순서",
-        response = EvaluationRes.class
+        response = BuyOrNotRes.class
     )
     @GetMapping
     public ResponseEntity<Object> getBuyOrNotList(
-        @ApiParam(value = "정렬 조건", defaultValue = "LATELY") @RequestParam(defaultValue = "LATELY") BuyOrNotOrder order,
+        @ApiParam(value = "정렬 조건", defaultValue = "LATELY", required = true) @RequestParam BuyOrNotOrder order,
         @ApiParam(value = "페이지 크기", defaultValue = "10") @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1") @RequestParam(defaultValue = "1") int pageNo,
         @ApiParam(value = "검색어", required = false) @RequestParam(required = false) String searchWord
@@ -66,7 +70,7 @@ public class BuyOrNotController {
         @ApiParam(value = "정렬 조건", defaultValue = "LATELY" ) @RequestParam(defaultValue = "LATELY") BuyOrNotOrder order,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
-        @RequestAttribute(required = true) FirebaseUser user
+        @RequestAttribute FirebaseUser user
     ) {
         return new ResponseEntity<>(
             buyOrNotService.getEvaluationList(user.getUid(), stockCode, order, pageSize, pageNo)
@@ -95,7 +99,8 @@ public class BuyOrNotController {
     public ResponseEntity<Object> buyOrNot(
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
         @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell,
-        @RequestAttribute FirebaseUser user
+        @RequestAttribute FirebaseUser user,
+        @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token   // 로그인 필수처리
     ) {
         return new ResponseEntity<>(
             buyOrNotService.saveBuySell(stockCode, user.getUid(), buySell)
@@ -128,7 +133,7 @@ public class BuyOrNotController {
         @ApiParam(value = "기간", defaultValue = "TODAY" ) @RequestParam(defaultValue = "TODAY") BuyOrNotPeriod period,
         @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
-        @RequestAttribute(required = false) FirebaseUser user
+        @RequestAttribute FirebaseUser user
     ) {
         
         return new ResponseEntity<>(

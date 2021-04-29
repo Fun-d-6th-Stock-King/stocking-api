@@ -503,14 +503,8 @@ public class BuyOrNotService {
         NumberPath<Long> sellCntPath = Expressions.numberPath(Long.class, "sellCnt");
         
         OrderSpecifier<?>[] orderSpecifierList = switch (buySell) {
-            case BUY -> {
-                OrderSpecifier<?>[] arr = {buyCntPath.desc(), sellCntPath.asc(), };
-                yield arr;
-            }
-            case SELL -> {
-                OrderSpecifier<?>[] arr = {sellCntPath.desc(), buyCntPath.asc()};
-                yield arr;
-            }
+            case BUY -> new OrderSpecifier<?>[] {buyCntPath.desc(), sellCntPath.asc()};
+            case SELL -> new OrderSpecifier<?>[] {sellCntPath.desc(), buyCntPath.asc()};
             default -> throw new IllegalArgumentException("Unexpected value: " + buySell);
         };
         

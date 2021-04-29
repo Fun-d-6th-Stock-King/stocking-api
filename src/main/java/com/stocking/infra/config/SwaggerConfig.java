@@ -44,7 +44,8 @@ public class SwaggerConfig {
      */
     @Bean
     public Docket financeApi() {
-        Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("finance").select()
+        Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .groupName("주식시장").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.stock")).paths(PathSelectors.any())
                 .build();
 
@@ -53,7 +54,8 @@ public class SwaggerConfig {
 
     @Bean
     public Docket accountApi() {
-        Docket docket = new Docket(DocumentationType.SWAGGER_2).groupName("account").select()
+        Docket docket = new Docket(DocumentationType.SWAGGER_2)
+                .groupName("사용자").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.account")).paths(PathSelectors.any())
                 .build();
 
@@ -64,7 +66,7 @@ public class SwaggerConfig {
     public Docket buyOrNotApi() {
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
                 .ignoredParameterTypes(FirebaseUser.class)
-                .groupName("buyornot").select()
+                .groupName("살까말까").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.buyornot")).paths(PathSelectors.any())
                 .build();
 
@@ -75,7 +77,7 @@ public class SwaggerConfig {
     public Docket buyThenApi() {
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
                 .ignoredParameterTypes(FirebaseUser.class)
-                .groupName("buythen").select()
+                .groupName("그때살껄").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.buythen")).paths(PathSelectors.any())
                 .build();
 
@@ -86,7 +88,7 @@ public class SwaggerConfig {
     public Docket todayWordApi() {
         Docket docket = new Docket(DocumentationType.SWAGGER_2)
                 .ignoredParameterTypes(FirebaseUser.class)
-                .groupName("todayWord").select()
+                .groupName("오늘의 단어").select()
                 .apis(RequestHandlerSelectors.basePackage("com.stocking.modules.todayword")).paths(PathSelectors.any())
                 .build();
 

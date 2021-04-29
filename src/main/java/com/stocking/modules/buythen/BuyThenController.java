@@ -1,5 +1,8 @@
 package com.stocking.modules.buythen;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,15 +90,26 @@ public class BuyThenController {
     
     @ApiOperation(value = "네이버 뉴스 조회", 
         notes = "검색시 유의사항 - pageSize 10 이면 pageNo 100까지 가능, pageSize 100 이면 pageNo 10까지 가능<br> 현재 한글검색에 오류가 있음 종목코드로 검색", 
-        response = String.class)
+        response = NewsRes.class)
     @GetMapping("/naver-news")
     public ResponseEntity<Object> getNaverNews(
         @ApiParam(value = "검색어", defaultValue = "010140", required = true) @RequestParam String query,
         @ApiParam(value = "페이지 크기(10~100)", defaultValue = "10") @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호(10~100)", defaultValue = "1") @RequestParam(defaultValue = "1") int pageNo
-    ) throws Exception {
+    ) throws UnsupportedEncodingException {
         return new ResponseEntity<>(
             buyThenService.getNaverNews(query, pageNo, pageSize)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(value = "10년 내 최고가 ", 
+        notes = "10년 내 최고가 - 삼성(005930),sk하이닉스(000660),카카오(035720),현대자동차(005380)", 
+        response = String.class)
+    @GetMapping("/high-price-10year")
+    public ResponseEntity<Object> getHighPrice(
+    ) throws IOException {
+        return new ResponseEntity<>(
+            buyThenService.getHighPrice()
         , HttpStatus.OK);
     }
 }

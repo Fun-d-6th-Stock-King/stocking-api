@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.stocking.infra.common.PageInfo;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,9 +16,11 @@ import lombok.NoArgsConstructor;
 @Builder
 public class BuyOrNotRes {
 
-    private List<SimpleEvaluation> simpleEvaluationList;
-    
+    @ApiModelProperty(notes = "페이지정보", required=false, position=1)
     private PageInfo pageInfo;
+
+    @ApiModelProperty(notes = "평가목록", required=false, position=2)
+    private List<SimpleEvaluation> simpleEvaluationList;
     
     @Data
     @AllArgsConstructor

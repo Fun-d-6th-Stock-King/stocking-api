@@ -56,7 +56,6 @@ public class CalcHistRes {
         @ApiModelProperty(notes = "작성자 id", required=false, position=10)
         private String createdUid;
         
-        
         @ApiModelProperty(notes = "종목코드", required=false, position=12)
         private String sector;
         
