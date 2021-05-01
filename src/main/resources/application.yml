@@ -70,5 +70,5 @@ logging:
   level[org.hibernate.type.descriptor.sql]: INFO
   
 server:
-  port: ${PORT:80}
+  port: ${PORT:8080}
   
