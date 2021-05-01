@@ -75,7 +75,7 @@ public class BuyOrNotController {
     
     @ApiOperation(
         value = "종목 살래말래 평가 하기",
-        notes = "종목 살래말래 평가 하기",
+        notes = "종목 살래말래 평가 하기(로그인 필수)",
         response = Integer.class
     )
     @PostMapping("/{stockCode}")
@@ -91,22 +91,36 @@ public class BuyOrNotController {
     }
     
     @ApiOperation(
-        value = "종목별 현재 시세, 등락률, 일별 시세 등",
-        notes = "현재 시세, 등락률, 기간내 최고가, 최고가 일자, 기간내 최저가, 최저가 일자",
+        value = "종목별 best 평가 목록",
+        notes = "기간(오늘,7일,1개월,6개월,1년) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
+        response = EvaluationRes.class
+    )
+    @GetMapping("/{stockCode}/best")
+    public ResponseEntity<Object> getBestList(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @ApiParam(value = "기간", defaultValue = "TODAY" ) @RequestParam(defaultValue = "TODAY") BuyOrNotPeriod period,
+        @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
+        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
+        @RequestAttribute FirebaseUser user
+    ) {
+        
+        return new ResponseEntity<>(
+            buyOrNotService.getBestEvaluationList(user, stockCode, period, pageSize, pageNo)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "종목별 차트 그래프 데이터 조회",
+        notes = "현재 시세, 등락률, 10년내 1주일 주기 historical data, 장점, 단점",
         response = EvaluateBuySellRes.class
     )
-//    @GetMapping("/{stockCode}/{beforeDt}/{afterDt}")
     @GetMapping("/{stockCode}/chart")
-    public ResponseEntity<Object> getStockPrice(
+    public ResponseEntity<Object> getStockChart(
         @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
-//        @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,
-//        @ApiParam(value = "조회종료일자", defaultValue = "2021-12-31") @PathVariable String afterDt,
-//        @ApiParam(value = "조회 간격", defaultValue = "DAILY") @RequestParam(defaultValue = "DAILY") Interval interval
     ) throws IOException, ParseException {
         
         return new ResponseEntity<>(
-//                buyOrNotService.getStockPrice(stockCode, beforeDt, afterDt, interval)
-                buyOrNotService.getStockPrice(stockCode)
+            buyOrNotService.getStockChart(stockCode)
         , HttpStatus.OK);
     }
 
@@ -124,7 +138,7 @@ public class BuyOrNotController {
         @RequestAttribute FirebaseUser user
     ) {
         return new ResponseEntity<>(
-            buyOrNotService.getEvaluationList(user.getUid(), stockCode, order, pageSize, pageNo)
+            buyOrNotService.getEvaluationList(user, stockCode, order, pageSize, pageNo)
         , HttpStatus.OK);
     }
     
@@ -138,25 +152,6 @@ public class BuyOrNotController {
         
         return new ResponseEntity<>(
             buyOrNotService.getTodayBest()
-        , HttpStatus.OK);
-    }
-
-    @ApiOperation(
-        value = "종목별 best 평가 목록",
-        notes = "기간(오늘,7일,1개월,6개월,1년) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
-        response = EvaluationRes.class
-    )
-    @GetMapping("/{stockCode}/best")
-    public ResponseEntity<Object> getBestList(
-        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
-        @ApiParam(value = "기간", defaultValue = "TODAY" ) @RequestParam(defaultValue = "TODAY") BuyOrNotPeriod period,
-        @ApiParam(value = "페이지 크기", defaultValue = "10", required = false) @RequestParam(defaultValue = "10") int pageSize,
-        @ApiParam(value = "페이지 번호", defaultValue = "1", required = false) @RequestParam(defaultValue = "1") int pageNo,
-        @RequestAttribute FirebaseUser user
-    ) {
-        
-        return new ResponseEntity<>(
-            buyOrNotService.getBestEvaluationList(user.getUid(), stockCode, period, pageSize, pageNo)
         , HttpStatus.OK);
     }
 
