@@ -8,11 +8,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Calendar;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.google.common.collect.ImmutableMap;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.DateTimePath;
@@ -57,9 +52,6 @@ import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
 import lombok.extern.slf4j.Slf4j;
-import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
-import yahoofinance.histquotes.Interval;
 
 @Service
 @Slf4j
@@ -474,31 +466,8 @@ public class BuyThenService {
      * 현재가, 전일종가와 현재가를 비교한 수익률, historical price(10년치, 한달주기 데이터)
      * @throws IOException
      */
-    public Map<String, Object> getKospiChart() throws IOException {
-        yahoofinance.Stock stock = YahooFinance.get("^KS11");
-        
-        Calendar startDt = Calendar.getInstance();
-        Calendar endDt = Calendar.getInstance();
-        startDt.add(Calendar.YEAR, -10);
-        
-        List<HistoricalQuote> quoteList = stock.getHistory(startDt, endDt, Interval.MONTHLY);
-        
-        Comparator<HistoricalQuote> comparatorByClose = 
-                (x1, x2) -> x1.getClose().compareTo(x2.getClose());
-        
-        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
-        
-        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
-        
-        return ImmutableMap.<String, Object>builder()
-            .put("currentPrice", stock.getQuote().getPrice())
-            .put("changeInPercent", stock.getQuote().getChangeInPercent())
-            .put("maxQuote", maxQuote)
-            .put("minQuote", minQuote)
-            .put("quoteList", quoteList)
-            .build();
+    public StockHist getKospiChart() throws IOException {
+        return stockUtils.getStockHist("KS11");
     }
     
     /**
@@ -547,9 +516,9 @@ public class BuyThenService {
         List<StocksPrice> stockList = stocksPriceRepository
                 .findByCodeInOrderByMarketCapDesc("005930", "000660", "035720", "005380");
         
-        List<HighPriceRes> highPriceList = stockList.stream()
+        return stockList.stream()
             .map(vo -> {
-                StockHist stockHist = stockUtils.getStockHistInfo(vo.getCode());
+                StockHist stockHist = stockUtils.getStockHist(vo.getCode());
                 return HighPriceRes.builder()
                     .code(vo.getCode())
                     .company(vo.getCompany())
@@ -558,7 +527,5 @@ public class BuyThenService {
                     .maxQuote(stockHist.getMaxQuote())
                     .build();
             }).collect(Collectors.toList());
-        
-        return highPriceList;
     }
 }

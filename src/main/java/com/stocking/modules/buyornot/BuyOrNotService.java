@@ -1,17 +1,12 @@
 package com.stocking.modules.buyornot;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Calendar;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,6 +24,8 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.PageInfo;
+import com.stocking.infra.common.StockUtils;
+import com.stocking.infra.common.StockUtils.StockHist;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
@@ -48,14 +45,9 @@ import com.stocking.modules.buyornot.vo.Comment;
 import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
-import com.stocking.modules.buyornot.vo.StockPriceRes;
 import com.stocking.modules.buythen.repo.QStocksPrice;
 
 import lombok.RequiredArgsConstructor;
-import yahoofinance.Stock;
-import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
-import yahoofinance.histquotes.Interval;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +58,8 @@ public class BuyOrNotService {
     private final JPAQueryFactory queryFactory;
     
     private static final String LIKECOUNT = "likeCount";
+    
+    private final StockUtils stockUtils;
     
     /**
      * 전체 평가 목록 조회
@@ -452,33 +446,8 @@ public class BuyOrNotService {
      * 그래프 데이터임. (수정예정 - 캐시 처리하여) 
      * @param stockCode
      */
-    public StockPriceRes getStockPrice(String stockCode, String beforeDt, String afterDt, Interval interval) throws IOException, ParseException {
-        Stock stock = YahooFinance.get(stockCode + ".KS");
-        
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar startDt = Calendar.getInstance();
-        Calendar endDt = Calendar.getInstance();
-        startDt.setTime(format.parse(beforeDt));
-        endDt.setTime(format.parse(afterDt));
-        
-        List<HistoricalQuote> quoteList = stock.getHistory(startDt, endDt, interval);
-        
-        Comparator<HistoricalQuote> comparatorByClose = 
-                (x1, x2) -> x1.getClose().compareTo(x2.getClose());
-        
-        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
-        
-        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
-        
-        return StockPriceRes.builder()
-                .price(stock.getQuote().getPrice())                     // 현재 시세
-                .changeInPercent(stock.getQuote().getChangeInPercent()) // 등락률
-                .maxQuote(maxQuote)
-                .minQuote(minQuote)
-                .quoteList(quoteList)
-                .build();
+    public StockHist getStockPrice(String stockCode)  {
+        return stockUtils.getStockHist(stockCode);
     }
     
     /**

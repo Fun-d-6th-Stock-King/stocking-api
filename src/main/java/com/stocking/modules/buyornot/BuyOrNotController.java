@@ -31,7 +31,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import springfox.documentation.annotations.ApiIgnore;
-import yahoofinance.histquotes.Interval;
 
 @RequestMapping(value = "/api/buyornot")
 @RestController
@@ -56,6 +55,58 @@ public class BuyOrNotController {
         
         return new ResponseEntity<>(
             buyOrNotService.getBuyOrNotList(order, pageSize, pageNo, searchWord)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "종목별 살까 갯수, 말까 갯수",
+        notes = "종목별 총 `살까` 갯수, 총 `말까` 갯수, 로그인한 사용자의 `살까말까` 선택값(null, buy, sell)",
+        response = EvaluateBuySellRes.class
+    )
+    @GetMapping("/{stockCode}")
+    public ResponseEntity<Object> getBuyOrNotCount(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @RequestAttribute FirebaseUser user
+    ) {
+        return new ResponseEntity<>(
+            buyOrNotService.getBuySellCount(stockCode, user.getUid())
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "종목 살래말래 평가 하기",
+        notes = "종목 살래말래 평가 하기",
+        response = Integer.class
+    )
+    @PostMapping("/{stockCode}")
+    public ResponseEntity<Object> buyOrNot(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell,
+        @RequestAttribute FirebaseUser user,
+        @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token   // 로그인 필수처리
+    ) {
+        return new ResponseEntity<>(
+            buyOrNotService.saveBuySell(stockCode, user.getUid(), buySell)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "종목별 현재 시세, 등락률, 일별 시세 등",
+        notes = "현재 시세, 등락률, 기간내 최고가, 최고가 일자, 기간내 최저가, 최저가 일자",
+        response = EvaluateBuySellRes.class
+    )
+//    @GetMapping("/{stockCode}/{beforeDt}/{afterDt}")
+    @GetMapping("/{stockCode}/chart")
+    public ResponseEntity<Object> getStockPrice(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
+//        @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,
+//        @ApiParam(value = "조회종료일자", defaultValue = "2021-12-31") @PathVariable String afterDt,
+//        @ApiParam(value = "조회 간격", defaultValue = "DAILY") @RequestParam(defaultValue = "DAILY") Interval interval
+    ) throws IOException, ParseException {
+        
+        return new ResponseEntity<>(
+//                buyOrNotService.getStockPrice(stockCode, beforeDt, afterDt, interval)
+                buyOrNotService.getStockPrice(stockCode)
         , HttpStatus.OK);
     }
 
@@ -91,38 +142,6 @@ public class BuyOrNotController {
     }
 
     @ApiOperation(
-        value = "종목 살래말래 평가 하기",
-        notes = "종목 살래말래 평가 하기",
-        response = Integer.class
-    )
-    @PostMapping("/{stockCode}")
-    public ResponseEntity<Object> buyOrNot(
-        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
-        @ApiParam(value = "BUY, NOT, NULL", defaultValue = "BUY", required = false) @RequestParam(required = false) BuySell buySell,
-        @RequestAttribute FirebaseUser user,
-        @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token   // 로그인 필수처리
-    ) {
-        return new ResponseEntity<>(
-            buyOrNotService.saveBuySell(stockCode, user.getUid(), buySell)
-        , HttpStatus.OK);
-    }
-    
-    @ApiOperation(
-        value = "살까말까 상세",
-        notes = "살까말까 상세, param - 종목코드, uid, header 에 있는 uid 가져오는 intercepter 만들어야할듯?",
-        response = EvaluateBuySellRes.class
-    )
-    @GetMapping("/{stockCode}")
-    public ResponseEntity<Object> getBuyOrNotCount(
-        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
-        @RequestAttribute FirebaseUser user
-    ) {
-        return new ResponseEntity<>(
-            buyOrNotService.getBuySellCount(stockCode, user.getUid())
-        , HttpStatus.OK);
-    }
-    
-    @ApiOperation(
         value = "종목별 best 평가 목록",
         notes = "기간(오늘,7일,1개월,6개월,1년) type 을 받아서 해당 기간 사이에 좋아요를 가장 많이 받은 순으로 정렬하여 출력",
         response = EvaluationRes.class
@@ -141,24 +160,6 @@ public class BuyOrNotController {
         , HttpStatus.OK);
     }
 
-    @ApiOperation(
-        value = "종목별 현재 시세, 등락률, 일별 시세 등",
-        notes = "현재 시세, 등락률, 기간내 최고가, 최고가 일자, 기간내 최저가, 최저가 일자",
-        response = EvaluateBuySellRes.class
-    )
-    @GetMapping("/{stockCode}/{beforeDt}/{afterDt}")
-    public ResponseEntity<Object> getStockPrice(
-        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
-        @ApiParam(value = "조회시작일자", defaultValue = "2021-01-01") @PathVariable String beforeDt,
-        @ApiParam(value = "조회종료일자", defaultValue = "2021-12-31") @PathVariable String afterDt,
-        @ApiParam(value = "조회 간격", defaultValue = "DAILY") @RequestParam(defaultValue = "DAILY") Interval interval
-    ) throws IOException, ParseException {
-        
-        return new ResponseEntity<>(
-                buyOrNotService.getStockPrice(stockCode, beforeDt, afterDt, interval)
-        , HttpStatus.OK);
-    }
-    
     @ApiOperation(
         value = "살까 말까 랭킹 목록(메인)",
         notes = "살까 말까 랭킹 목록(메인)",

@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
@@ -65,37 +66,44 @@ public class StockUtils {
     }
     
     /**
-     * 10년 기간내 최고가 정보 (1일 단위 캐시)
+     * 10년 기간내 최고 종가, 최소 종가 (주기-일주일) (1일 단위 캐시)
      * @param code
      * @return
      * @throws IOException
      */
     @Cacheable(value = "stockHistCache", key = "#code")
-    public StockHist getStockHistInfo(String code) {
+    public StockHist getStockHist(String code) {
         
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
         
         Comparator<HistoricalQuote> comparatorByClose = 
-                (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 : x1.getHigh().compareTo(x2.getHigh());
+                (x1, x2) -> (x1.getClose() == null || x2.getClose() == null) ? 0 :x1.getClose().compareTo(x2.getClose());
         
         try {
             yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
             Calendar startDt = Calendar.getInstance();
             Calendar endDt = Calendar.getInstance();
             startDt.add(Calendar.YEAR, -10);
-            quoteList = yahooStock.getHistory(startDt, endDt, Interval.DAILY);
+            quoteList = yahooStock.getHistory(startDt, endDt, Interval.WEEKLY);
         } catch (IOException e) {
             e.printStackTrace();
             log.error(e.getLocalizedMessage());
         }
         
         HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
+                .orElseThrow(NoSuchElementException::new);
+            
+        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
+            .orElseThrow(NoSuchElementException::new); 
         
         return StockHist.builder()
                 .code(code)
+                .price(yahooStock.getQuote().getPrice())                     // 현재 시세
+                .changeInPercent(yahooStock.getQuote().getChangeInPercent()) // 등락률
                 .maxQuote(maxQuote)
+                .minQuote(minQuote)
+                .quoteList(quoteList.stream().filter(vo -> vo.getClose() != null).collect(Collectors.toList()))
                 .build();
     }
     
@@ -104,6 +112,10 @@ public class StockUtils {
     @Getter
     public static class StockHist{
         private String code;
+        private BigDecimal price;
+        private BigDecimal changeInPercent;
         private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
+        private HistoricalQuote minQuote;
+        private List<HistoricalQuote> quoteList;
     }
 }
