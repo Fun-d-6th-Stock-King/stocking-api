@@ -3,6 +3,9 @@ package com.stocking.modules.todayword;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.stocking.modules.buyornot.repo.EvaluateBuySell;
+import com.stocking.modules.buythen.InvestDate;
+import com.stocking.modules.buythen.YieldSortRes;
 import org.springframework.stereotype.Service;
 
 import com.querydsl.core.types.Expression;
@@ -68,7 +71,7 @@ public class TodayWordService {
         
         return resultMap;
     }
-    
+
     /**
      * 좋아요가 가장많은 오늘의 단어 (사용자 정보 넘어오면 사용자가 좋아요했는지도 확인해줌)
      * @param user
@@ -111,4 +114,24 @@ public class TodayWordService {
             .fetchOne();
         
     }
+
+    /**
+     * 등록되어 있는 오늘의 단어 수정
+     * @param user
+     * @param todayWordReq
+     * @return
+     */
+    public void updateTodayWord(FirebaseUser user, TodayWordReq todayWordReq) {
+
+    }
+
+    /**
+     * 최근 기준으로 등록된 오늘의 단어 목록
+     * @param pageParam
+     * @return
+     */
+    public TodayWordSortRes getRecentlyTodayWordSortList(int pageSize, int pageNo) {
+        return null;
+    }
+
 }
