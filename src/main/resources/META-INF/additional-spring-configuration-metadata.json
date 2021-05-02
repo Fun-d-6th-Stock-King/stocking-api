@@ -68,5 +68,15 @@
     "name": "logging.level[org.springframework.web.client.RestTemplate]",
     "type": "java.lang.String",
     "description": "A description for 'logging.level[org.springframework.web.client.RestTemplate]'"
+  },
+  {
+    "name": "logging.level[org.hibernate.SQL]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.hibernate.SQL]'"
+  },
+  {
+    "name": "logging.level[org.hibernate.type.descriptor.sql.BasicBinder]",
+    "type": "java.lang.String",
+    "description": "A description for 'logging.level[org.hibernate.type.descriptor.sql.BasicBinder]'"
   }
 ]}

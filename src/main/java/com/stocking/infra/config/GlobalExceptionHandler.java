@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.bind.ServletRequestBindingException;
@@ -26,8 +27,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = {Exception.class, RuntimeException.class})
     @ResponseBody
-    public Map<String, Object> doCommonExceptionProcess(HttpServletResponse httpServletResponse, Exception exception) {
-        log.error(getPrintStackTrace(exception));
+    public Map<String, Object> doCommonExceptionProcess(HttpServletRequest request, HttpServletResponse httpServletResponse, Exception exception) {
+        
+        String reqeustInfo = String.format("[%s] %s from %s(%s)", request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), request.getHeader("User-Agent"));
+        log.error("\n****ERROR****{}", reqeustInfo, exception);
         
         Map<String, Object> resultMap = new HashMap<>();
         
