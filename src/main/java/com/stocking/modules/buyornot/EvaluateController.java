@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stocking.infra.common.FirebaseUser;
+import com.stocking.infra.config.UserInterceptor;
 import com.stocking.modules.buyornot.repo.Evaluate;
 import com.stocking.modules.buyornot.repo.EvaluateComment;
 import com.stocking.modules.buyornot.vo.CommentReq;
@@ -20,6 +22,7 @@ import com.stocking.modules.buyornot.vo.EvaluationDetailRes;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import springfox.documentation.annotations.ApiIgnore;
 
 @RequestMapping(value = "/api/evaluate")
 @RestController
@@ -36,7 +39,8 @@ public class EvaluateController {
     @PostMapping
     public ResponseEntity<Object> evaluate(
         @RequestBody EvaluateReq evaluateReq,
-        @RequestAttribute FirebaseUser user
+        @RequestAttribute FirebaseUser user,
+        @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token
     ) throws Exception {
         return new ResponseEntity<>(
             evaluateService.saveEvaluate(evaluateReq, user.getUid())
@@ -51,7 +55,8 @@ public class EvaluateController {
     @PostMapping("/{evaluateId}/like")
     public ResponseEntity<Object> saveLike(
         @PathVariable int evaluateId,
-        @RequestAttribute FirebaseUser user
+        @RequestAttribute FirebaseUser user,
+        @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token
     ) {
         return new ResponseEntity<>(
             evaluateService.saveLike(evaluateId, user.getUid())
@@ -67,7 +72,8 @@ public class EvaluateController {
     public ResponseEntity<Object> comment(
         @PathVariable int evaluateId,
         @RequestBody CommentReq commentReq,
-        @RequestAttribute FirebaseUser user
+        @RequestAttribute FirebaseUser user,
+        @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token
     ) {
         return new ResponseEntity<>(
             evaluateService.saveComment(evaluateId, commentReq.getComment(), user.getUid())
@@ -85,7 +91,7 @@ public class EvaluateController {
         @RequestAttribute FirebaseUser user
     ) {
         return new ResponseEntity<>(
-            evaluateService.getDetail(evaluateId, user.getUid())
+            evaluateService.getDetail(evaluateId, user)
         , HttpStatus.OK);
     }
 }
