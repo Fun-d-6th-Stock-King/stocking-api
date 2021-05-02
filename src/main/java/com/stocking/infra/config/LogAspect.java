@@ -11,6 +11,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StopWatch;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -25,35 +26,42 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LogAspect {
 
-    @Around("(within(@org.springframework.stereotype.Controller *)"
-            + "|| within(@org.springframework.web.bind.annotation.RestController *))"
+//    @Around("(within(@org.springframework.stereotype.Controller *) || "
+    @Around("("
+            + "within(@org.springframework.web.bind.annotation.RestController *))"
             + "&& execution(public * *(..))")
     public Object logging(ProceedingJoinPoint pjp) throws Throwable {
+        
+        RequestAttributes requestAttribute = RequestContextHolder.getRequestAttributes();
 
-        String params = getRequestParams();
+        HttpServletRequest request = ((ServletRequestAttributes) requestAttribute).getRequest();
 
-        long startAt = System.currentTimeMillis();
-
-        log.info("==================== REQUEST : {}({}) = {}", pjp.getSignature().getDeclaringTypeName(),
-                pjp.getSignature().getName(), params);
-
+        log.info("\n==================== REQUEST : [{}] {} from {}({}) / {}({}) = {} =======================", 
+            request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), request.getHeader("User-Agent"),
+            pjp.getSignature().getDeclaringTypeName(), pjp.getSignature().getName(), getRequestParams(requestAttribute)
+        );
+        
+        final StopWatch stopWatch = new StopWatch();
+        
+        stopWatch.start();
         Object result = pjp.proceed();
+        stopWatch.stop();
 
-        long endAt = System.currentTimeMillis();
-
-        log.info("==================== RESPONSE : {}({}) = ({}ms)", pjp.getSignature().getDeclaringTypeName(),
-                pjp.getSignature().getName(), endAt-startAt);
+        log.info("\n==================== RESPONSE : {}({}) ({}ms) =======================", 
+                pjp.getSignature().getDeclaringTypeName(), pjp.getSignature().getName(), stopWatch.getTotalTimeMillis());
 
         return result;
 
     }
 
-    // get requset value
-    private String getRequestParams() {
+    /**
+     * request 파라미터를 문자열로 반환
+     * @param requestAttribute
+     * @return
+     */
+    private String getRequestParams(RequestAttributes requestAttribute) {
 
         String params = "";
-
-        RequestAttributes requestAttribute = RequestContextHolder.getRequestAttributes();
 
         if(requestAttribute != null){
             HttpServletRequest request = ((ServletRequestAttributes) requestAttribute).getRequest();
@@ -61,16 +69,13 @@ public class LogAspect {
             Map<String, String[]> paramMap = request.getParameterMap();
 
             if(!paramMap.isEmpty()) {
-                params = " [" + paramMapToString(paramMap) + "]";
+                params = paramMap.entrySet().stream()
+                    .map(entry -> String.format("%s -> (%s)",
+                            entry.getKey(), Joiner.on(",").join(entry.getValue())))
+                    .collect(Collectors.joining(", "));
+                params = " [" + params + "]";
             }
         }
         return params;
-    }
-
-    private String paramMapToString(Map<String, String[]> paramMap) {
-        return paramMap.entrySet().stream()
-                .map(entry -> String.format("%s -> (%s)",
-                        entry.getKey(), Joiner.on(",").join(entry.getValue())))
-                .collect(Collectors.joining(", "));
     }
 }
