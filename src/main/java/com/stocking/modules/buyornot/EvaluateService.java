@@ -6,12 +6,14 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.stocking.infra.common.FirebaseUser;
 import com.stocking.modules.buyornot.repo.Evaluate;
 import com.stocking.modules.buyornot.repo.EvaluateComment;
 import com.stocking.modules.buyornot.repo.EvaluateCommentRepository;
@@ -119,13 +121,23 @@ public class EvaluateService {
      * @param uid
      * @return
      */
-    public EvaluationDetailRes getDetail(long evaluateId, String uid) {
+    public EvaluationDetailRes getDetail(long evaluateId, FirebaseUser user) {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+        
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        }
         
         Evaluation evaluation = queryFactory.select(
                 Projections.fields(Evaluation.class,
@@ -141,12 +153,7 @@ public class EvaluateService {
                             .from(qEvaluateLike)
                             .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                         aliasLikeCount),   // 좋아요 횟수
-                    ExpressionUtils.as(
-                        JPAExpressions.select(qEvaluateLike.id)
-                            .from(qEvaluateLike)
-                            .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
-                                    .and(qEvaluateLike.uid.eq(uid))).exists(),
-                        "userlike")     // 사용자가 좋아요했는지 여부
+                    userLike     // 사용자가 좋아요했는지 여부
                 )
             ).from(qEvaluate)
             .where(qEvaluate.id.eq(evaluateId))

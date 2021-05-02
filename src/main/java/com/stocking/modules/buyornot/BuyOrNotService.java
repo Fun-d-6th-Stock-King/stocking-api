@@ -1,17 +1,11 @@
 package com.stocking.modules.buyornot;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Calendar;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -19,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -28,7 +23,9 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
+import com.stocking.infra.common.StockUtils;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
@@ -48,14 +45,10 @@ import com.stocking.modules.buyornot.vo.Comment;
 import com.stocking.modules.buyornot.vo.EvaluateBuySellRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
-import com.stocking.modules.buyornot.vo.StockPriceRes;
+import com.stocking.modules.buyornot.vo.StockChartRes;
 import com.stocking.modules.buythen.repo.QStocksPrice;
 
 import lombok.RequiredArgsConstructor;
-import yahoofinance.Stock;
-import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
-import yahoofinance.histquotes.Interval;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +59,8 @@ public class BuyOrNotService {
     private final JPAQueryFactory queryFactory;
     
     private static final String LIKECOUNT = "likeCount";
+    
+    private final StockUtils stockUtils;
     
     /**
      * 전체 평가 목록 조회
@@ -137,7 +132,7 @@ public class BuyOrNotService {
      * @param pageNo
      * @return
      */
-    public EvaluationRes getEvaluationList(String uid, String stockCode, BuyOrNotOrder order, long pageSize, long pageNo) {
+    public EvaluationRes getEvaluationList(FirebaseUser user, String stockCode, BuyOrNotOrder order, long pageSize, long pageNo) {
         
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
@@ -151,6 +146,16 @@ public class BuyOrNotService {
             case LATELY -> qEvaluate.id.desc();
             case POPULARITY -> aliasLikeCount.desc();
         };
+        
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        }
         
         List<Evaluation> evaluationList = queryFactory.select(
             Projections.fields(Evaluation.class,
@@ -166,12 +171,7 @@ public class BuyOrNotService {
                         .from(qEvaluateLike)
                         .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                     aliasLikeCount),   // 좋아요 횟수
-                ExpressionUtils.as(
-                    JPAExpressions.select(qEvaluateLike.id)
-                        .from(qEvaluateLike)
-                        .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
-                                .and(qEvaluateLike.uid.eq(uid))).exists(),
-                    "userlike")     // 사용자가 좋아요했는지 여부
+                userLike    // 사용자가 좋아요했는지 여부
             )
         ).from(qEvaluate)
         .where(qEvaluate.code.eq(stockCode))
@@ -248,28 +248,37 @@ public class BuyOrNotService {
             .limit(1)
             .fetchOne();
         
-        if(tuple != null) {
-            Long evaluateId = tuple.get(qEvaluateLike.evaluateId);
-            return queryFactory.select(
-                  Projections.fields(SimpleEvaluation.class,
-                      qEvaluate.id,
-                      qEvaluate.code,
-                      qEvaluate.company,
-                      qEvaluate.pros,
-                      qEvaluate.cons,
-                      qEvaluate.createdUid.as("uid"),
-                      ExpressionUtils.as(
-                          JPAExpressions.select(qEvaluateLike.id.count())
-                              .from(qEvaluateLike)
-                              .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                          aliasLikeCount)   // 좋아요 횟수
-                  )
-              ).from(qEvaluate)
-              .where(qEvaluate.id.eq(evaluateId))
-              .fetchOne();
-        }else { // 오늘 좋아요를 받은 평가 없는 경우
-            return SimpleEvaluation.builder().build();
+        if(tuple == null) { // 오늘 좋아요를 받은 평가 없는 경우, 전체기간으로 조회
+            tuple = queryFactory.select(
+                qEvaluateLike.evaluateId,
+                qEvaluateLike.id.count().as(groupCount)
+            )
+            .from(qEvaluateLike)
+//            .where(qEvaluateLike.createdDate.between(now.atTime(0, 0, 0), now.atTime(23, 59, 59)))
+            .groupBy(qEvaluateLike.evaluateId)
+            .orderBy(groupCount.desc())
+            .limit(1)
+            .fetchOne();
         }
+        
+        Long evaluateId = tuple.get(qEvaluateLike.evaluateId);
+        return queryFactory.select(
+              Projections.fields(SimpleEvaluation.class,
+                  qEvaluate.id,
+                  qEvaluate.code,
+                  qEvaluate.company,
+                  qEvaluate.pros,
+                  qEvaluate.cons,
+                  qEvaluate.createdUid.as("uid"),
+                  ExpressionUtils.as(
+                      JPAExpressions.select(qEvaluateLike.id.count())
+                          .from(qEvaluateLike)
+                          .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
+                      aliasLikeCount)   // 좋아요 횟수
+              )
+          ).from(qEvaluate)
+          .where(qEvaluate.id.eq(evaluateId))
+          .fetchOne();
     }
     
     /**
@@ -341,7 +350,7 @@ public class BuyOrNotService {
      * @param pageNo
      * @return
      */
-    public EvaluationRes getBestEvaluationList(String uid, String stockCode, BuyOrNotPeriod period, long pageSize, long pageNo) {
+    public EvaluationRes getBestEvaluationList(FirebaseUser user, String stockCode, BuyOrNotPeriod period, long pageSize, long pageNo) {
         LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
         LocalDateTime startDt = now.atTime(0, 0, 0);
         LocalDateTime endDt = now.atTime(23, 59, 59);
@@ -367,6 +376,17 @@ public class BuyOrNotService {
         
 //        Optional.ofNullable(booleanExpression).ifPresent(whereClause::and);   // 기간내 좋아요 수 조건, 항시 전체 좋아요수 보여주기위해 주석
         
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        
+        }
+        
         List<Evaluation> evaluationList = queryFactory.select(
             Projections.fields(Evaluation.class,
                 qEvaluate.id,
@@ -381,12 +401,7 @@ public class BuyOrNotService {
                         .from(qEvaluateLike)
                         .where(whereClause),
                     aliasLikeCount),   // 좋아요 횟수
-                ExpressionUtils.as(
-                    JPAExpressions.select(qEvaluateLike.id)
-                        .from(qEvaluateLike)
-                        .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
-                                .and(qEvaluateLike.uid.eq(uid))).exists(),
-                    "userlike")     // 사용자가 좋아요했는지 여부
+                userLike     // 사용자가 좋아요했는지 여부
             )
         ).from(qEvaluate)
         .where(
@@ -452,32 +467,40 @@ public class BuyOrNotService {
      * 그래프 데이터임. (수정예정 - 캐시 처리하여) 
      * @param stockCode
      */
-    public StockPriceRes getStockPrice(String stockCode, String beforeDt, String afterDt, Interval interval) throws IOException, ParseException {
-        Stock stock = YahooFinance.get(stockCode + ".KS");
+    public StockChartRes getStockChart(String stockCode) {
         
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-        Calendar startDt = Calendar.getInstance();
-        Calendar endDt = Calendar.getInstance();
-        startDt.setTime(format.parse(beforeDt));
-        endDt.setTime(format.parse(afterDt));
+        QEvaluate qEvaluate = QEvaluate.evaluate;
+        QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         
-        List<HistoricalQuote> quoteList = stock.getHistory(startDt, endDt, interval);
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
-        Comparator<HistoricalQuote> comparatorByClose = 
-                (x1, x2) -> x1.getClose().compareTo(x2.getClose());
+        BooleanBuilder whereClause = new BooleanBuilder();
+        whereClause.and(qEvaluateLike.evaluateId.eq(qEvaluate.id));
         
-        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
+        Evaluation evaluation = queryFactory.select(
+            Projections.fields(Evaluation.class,
+                qEvaluate.id,
+                qEvaluate.company,
+                qEvaluate.code,
+                qEvaluate.pros,
+                qEvaluate.cons,
+                qEvaluate.giphyImgId,
+                qEvaluate.createdUid.as("uid"),
+                ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id.count())
+                        .from(qEvaluateLike)
+                        .where(whereClause),
+                    aliasLikeCount)   // 좋아요 횟수
+            )
+        ).from(qEvaluate)
+        .where(qEvaluate.code.eq(stockCode))
+        .orderBy(aliasLikeCount.desc())
+        .limit(1)
+        .fetchOne();
         
-        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
-            .orElseThrow(NoSuchElementException::new);
-        
-        return StockPriceRes.builder()
-                .price(stock.getQuote().getPrice())                     // 현재 시세
-                .changeInPercent(stock.getQuote().getChangeInPercent()) // 등락률
-                .maxQuote(maxQuote)
-                .minQuote(minQuote)
-                .quoteList(quoteList)
+        return StockChartRes.builder()
+                .evaluation(evaluation)
+                .stockHist(stockUtils.getStockHist(stockCode))
                 .build();
     }
     
@@ -503,14 +526,8 @@ public class BuyOrNotService {
         NumberPath<Long> sellCntPath = Expressions.numberPath(Long.class, "sellCnt");
         
         OrderSpecifier<?>[] orderSpecifierList = switch (buySell) {
-            case BUY -> {
-                OrderSpecifier<?>[] arr = {buyCntPath.desc(), sellCntPath.asc(), };
-                yield arr;
-            }
-            case SELL -> {
-                OrderSpecifier<?>[] arr = {sellCntPath.desc(), buyCntPath.asc()};
-                yield arr;
-            }
+            case BUY -> new OrderSpecifier<?>[] {buyCntPath.desc(), sellCntPath.asc()};
+            case SELL -> new OrderSpecifier<?>[] {sellCntPath.desc(), buyCntPath.asc()};
             default -> throw new IllegalArgumentException("Unexpected value: " + buySell);
         };
         
