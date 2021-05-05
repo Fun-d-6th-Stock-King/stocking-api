@@ -1,5 +1,6 @@
 package com.stocking.modules.todayword;
 
+import com.stocking.infra.common.FirebaseUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -7,7 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.junit.jupiter.api.Assertions.*;
+import javax.transaction.Transactional;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -15,6 +19,9 @@ class TodayWordServiceTest {
 
     @Autowired
     private TodayWordService todayWordService;
+
+    @Autowired
+    private TodayWordRepository todayWordRepository;
 
     @DisplayName("단어 저장 테스트")
     @Test
@@ -40,8 +47,37 @@ class TodayWordServiceTest {
         //then
     }
 
+    @DisplayName("오늘의 단어 조회")
+    @Test
+    @Transactional
+    void getTodayWordTest() {
+        //given
+        FirebaseUser testUser;
+        TodayWord todayWord;
+
+        //when
+        testUser = FirebaseUser.builder()
+                .uid("123123123")
+                .name("user")
+                .email("user@test.com")
+                .build();
+
+        todayWord = TodayWord.builder()
+                .createdUid(testUser.getUid())
+                .wordName("테스트")
+                .mean("테스트한다는뜻")
+                .build();
+
+        todayWordRepository.save(todayWord);
+
+        //then
+        Optional<TodayWord> result = todayWordService.getTodayWord(testUser, todayWord.getId());
+        assertEquals(result.get().getWordName(), todayWord.getWordName());
+    }
+
     @DisplayName("오늘의 단어 수정 테스트")
     @Test
+    @Transactional
     void updateTodayWordTest() {
         //given
         //when

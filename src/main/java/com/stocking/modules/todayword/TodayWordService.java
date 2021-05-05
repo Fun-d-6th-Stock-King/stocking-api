@@ -2,10 +2,12 @@ package com.stocking.modules.todayword;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buythen.InvestDate;
 import com.stocking.modules.buythen.YieldSortRes;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.querydsl.core.types.Expression;
@@ -22,7 +24,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class TodayWordService {
-    
+
+//    @Autowired
     private final TodayWordRepository todayWordRepository;
     
     private final TodayWordLikeRepository todayWordLikeRepository;
@@ -116,6 +119,18 @@ public class TodayWordService {
     }
 
     /**
+     * 오늘의 단어 조회
+     * @param user
+     * @param todayWordId
+     * @return
+     */
+    public Optional<TodayWord> getTodayWord(FirebaseUser user, Long todayWordId) {
+//        return todayWordRepository.findByTodayWordId(todayWordId, user.getUid());
+        return todayWordRepository.findById(todayWordId);
+//        return null;
+    }
+
+    /**
      * 등록되어 있는 오늘의 단어 수정
      * @param user
      * @param todayWordReq
@@ -124,6 +139,7 @@ public class TodayWordService {
     public void updateTodayWord(FirebaseUser user, TodayWordReq todayWordReq) {
 
     }
+
 
     /**
      * 최근 기준으로 등록된 오늘의 단어 목록
