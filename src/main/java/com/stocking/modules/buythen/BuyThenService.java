@@ -321,7 +321,7 @@ public class BuyThenService {
         for (Tuple tuple : industryList) {
             cnt++;
             // 동일업종 종목코드 리스트
-            industryCodes.add(tuple.get(qStocksPrice.code));
+            industryCodes.add(tuple.get(qStocksPrice.code) + ".KS");
 
             // 대표 종목 4가지
             if (cnt <= 4) {
@@ -329,8 +329,6 @@ public class BuyThenService {
             }
 
             // 과거 동일업종 주가 합
-            System.out.println(tuple.get(qStocksPrice.company));
-            System.out.println(tuple.get(datePriceField));
             BigDecimal oldPrice = tuple.get(datePriceField);
             if (oldPrice != null) {
             oldSumPrice = oldSumPrice.add(tuple.get(datePriceField));
