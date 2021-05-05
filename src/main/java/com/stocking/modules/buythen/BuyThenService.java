@@ -317,8 +317,6 @@ public class BuyThenService {
         String mainCompanies = "";                              // 대표 종목 4가지
         int cnt = 0;
         BigDecimal oldSumPrice = new BigDecimal(0);         // 과거 동일업종 주가 합
-        BigDecimal newSumPrice = new BigDecimal(0);         // 현재 동일업종 주가 합
-        RealTimeStock industryRealTimeStock = new RealTimeStock();
 
         for (Tuple tuple : industryList) {
             cnt++;
@@ -337,13 +335,12 @@ public class BuyThenService {
             if (oldPrice != null) {
             oldSumPrice = oldSumPrice.add(tuple.get(datePriceField));
             }
-
-            // 현재 동일업종 주가 합
-            industryRealTimeStock = stockUtils.getStockInfo(tuple.get(qStocksPrice.code));
-            newSumPrice = newSumPrice.add(industryRealTimeStock.getCurrentPrice());
         }
 
-        int industryNum = industryList.size(); // 동일 업종 회사수
+        // 동일업종 상승률 계산
+        int industryNum = industryList.size();
+        String[] industryCodesArray = industryCodes.toArray(new String[industryNum]);
+        BigDecimal newSumPrice = stockUtils.getCurrentSumPrice(industryCodesArray);
         BigDecimal industryYieldPercent = newSumPrice.subtract(oldSumPrice) // (현재종가합-이전종가합)/이전종가합 * 100
                 .divide(oldSumPrice, MathContext.DECIMAL32)
                 .multiply(new BigDecimal(100))
