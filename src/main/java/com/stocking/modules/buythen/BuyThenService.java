@@ -8,10 +8,10 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.querydsl.core.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -250,34 +250,43 @@ public class BuyThenService {
         BigDecimal kosOldPrice; // 코스피 과거 지수
         String oldDate;         // 검색한 과거 날짜
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd.");
+        QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
+        NumberPath<BigDecimal> datePriceField; // 동일 업종 날짜에 따른 주가 필드
         switch(investDate) {
             case DAY1 -> {
                 kosOldPrice = kosStockPrice.getPrice();
                 oldDate = kosStockPrice.getLastTradeDate().format(dateFormatter);
+                datePriceField = qStocksPrice.price;
             }
             case WEEK1 -> {
                 kosOldPrice = kosStockPrice.getPriceW1();
                 oldDate = kosStockPrice.getDateW1().format(dateFormatter);
+                datePriceField = qStocksPrice.priceW1;
             }
             case MONTH1 -> {
                 kosOldPrice = kosStockPrice.getPriceM1();
                 oldDate = kosStockPrice.getDateM1().format(dateFormatter);
+                datePriceField = qStocksPrice.priceM1;
             }
             case MONTH6 -> {
                 kosOldPrice = kosStockPrice.getPriceM6();
                 oldDate = kosStockPrice.getDateM6().format(dateFormatter);
+                datePriceField = qStocksPrice.priceM6;
             }
             case YEAR1 -> {
                 kosOldPrice = kosStockPrice.getPriceY1();
                 oldDate = kosStockPrice.getDateY1().format(dateFormatter);
+                datePriceField = qStocksPrice.priceY1;
             }
             case YEAR5 -> {
                 kosOldPrice = kosStockPrice.getPriceY5();
                 oldDate = kosStockPrice.getDateY5().format(dateFormatter);
+                datePriceField = qStocksPrice.priceY5;
             }
             case YEAR10 -> {
                 kosOldPrice = kosStockPrice.getPriceY10();
                 oldDate = kosStockPrice.getDateY10().format(dateFormatter);
+                datePriceField = qStocksPrice.priceY10;
             }
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + investDate
@@ -290,12 +299,56 @@ public class BuyThenService {
                 divide(kosOldPrice, MathContext.DECIMAL32).
                 multiply(new BigDecimal(100));
 
-        // 동종업계
+        // 동일 업종
         StocksPrice stocksPrice = stocksPriceRepository.findByStocksId(stock.getId())
                 .orElseThrow(() -> new Exception("종목 코드가 올바르지 않습니다."));
+        String sector = stocksPrice.getSectorYahoo();   // 영어 업종명
 
-        String sector = stocksPrice.getSectorYahoo();
-//        List<StocksPrice> companies = stocksPriceRepository.findBySectorYahoo(sector);
+        List<Tuple> industryList = queryFactory
+                .select(qStocksPrice.code,
+                        qStocksPrice.company,
+                        datePriceField)
+                .from(qStocksPrice)
+                .where(qStocksPrice.sectorYahoo.eq(sector))
+                .orderBy(qStocksPrice.marketCap.desc())
+                .fetch();
+
+        List<String> industryCodes = new ArrayList<String>();   // 동일 업종 id 리스트
+        String mainCompanies = "";                              // 대표 종목 4가지
+        int cnt = 0;
+        BigDecimal oldSumPrice = new BigDecimal(0);         // 과거 동일업종 주가 합
+        BigDecimal newSumPrice = new BigDecimal(0);         // 현재 동일업종 주가 합
+        RealTimeStock industryRealTimeStock = new RealTimeStock();
+
+        for (Tuple tuple : industryList) {
+            cnt++;
+            // 동일업종 종목코드 리스트
+            industryCodes.add(tuple.get(qStocksPrice.code));
+
+            // 대표 종목 4가지
+            if (cnt <= 4) {
+                mainCompanies += tuple.get(qStocksPrice.company) + " ";
+            }
+
+            // 과거 동일업종 주가 합
+            System.out.println(tuple.get(qStocksPrice.company));
+            System.out.println(tuple.get(datePriceField));
+            BigDecimal oldPrice = tuple.get(datePriceField);
+            if (oldPrice != null) {
+            oldSumPrice = oldSumPrice.add(tuple.get(datePriceField));
+            }
+
+            // 현재 동일업종 주가 합
+            industryRealTimeStock = stockUtils.getStockInfo(tuple.get(qStocksPrice.code));
+            newSumPrice = newSumPrice.add(industryRealTimeStock.getCurrentPrice());
+        }
+
+        int industryNum = industryList.size(); // 동일 업종 회사수
+        BigDecimal industryYieldPercent = newSumPrice.subtract(oldSumPrice) // (현재종가합-이전종가합)/이전종가합 * 100
+                .divide(oldSumPrice, MathContext.DECIMAL32)
+                .multiply(new BigDecimal(100))
+                .setScale(2, RoundingMode.HALF_EVEN);
+        industryNum = industryNum >= 4 ? industryNum - 4 : 0;
 
         // Build
         result = CurrentKospiIndustryRes.builder()
@@ -317,10 +370,11 @@ public class BuyThenService {
                         .build())
                 .industryValue(
                         IndustryValue.builder()
-                        .name(sector)
-                        .yieldPercent(kosCurrentPrice)
-                        .companies("test")
-                        .companyCnt(2)
+                        .sector(sector)
+                        .sectorKor(stocksPrice.getSectorKor())
+                        .yieldPercent(industryYieldPercent)
+                        .companies(mainCompanies)
+                        .companyCnt(industryNum)
                         .build()
                 )
                 .build();
