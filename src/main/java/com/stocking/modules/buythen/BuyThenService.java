@@ -233,8 +233,9 @@ public class BuyThenService {
         // 믿고싶지 않은 현재가
         RealTimeStock realTimeStock = stockUtils.getStockInfo(code);  // 실시간 주식 정보
         BigDecimal pricePerStock = realTimeStock.getCurrentPrice();   // 실시간 주가
-        BigDecimal stocksPerPrice = pricePerStock.divide(buyThenForm.getInvestPrice()). // 보유 주식 환산
-                setScale(3, RoundingMode.HALF_EVEN);
+        BigDecimal stocksPerPrice = buyThenForm.getInvestPrice()      // 보유 주식 환산
+                .divide(pricePerStock, MathContext.DECIMAL32)
+                .setScale(2, RoundingMode.HALF_EVEN);
 
         // 코스피
         String kosCode = "KS11"; // 코스피 종목 코드
@@ -314,10 +315,9 @@ public class BuyThenService {
                 .fetch();
 
         List<String> industryCodes = new ArrayList<String>();   // 동일 업종 id 리스트
-        String mainCompanies = "";                              // 대표 종목 4가지
+        List<Company> mainCompanies = new ArrayList<Company>();                            // 대표 종목 4가지
         int cnt = 0;
         BigDecimal oldSumPrice = new BigDecimal(0);         // 과거 동일업종 주가 합
-
         for (Tuple tuple : industryList) {
             cnt++;
             // 동일업종 종목코드 리스트
@@ -325,7 +325,11 @@ public class BuyThenService {
 
             // 대표 종목 4가지
             if (cnt <= 4) {
-                mainCompanies += tuple.get(qStocksPrice.company) + " ";
+                Company company = Company.builder()
+                        .code(tuple.get(qStocksPrice.code))
+                        .company(tuple.get(qStocksPrice.company))
+                        .build();
+                mainCompanies.add(company);
             }
 
             // 과거 동일업종 주가 합
