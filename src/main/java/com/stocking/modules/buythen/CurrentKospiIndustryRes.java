@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -55,18 +56,20 @@ public class CurrentKospiIndustryRes {
         private String currentTime;
     }
 
-    // 동종 업종 섹션 결과값
+    // 동일 업종 섹션 결과값
     @Data
     @AllArgsConstructor
     @Builder
     public static class IndustryValue {
-        @ApiModelProperty(notes = "업종명", position = 11)
-        private String name;
-        @ApiModelProperty(notes = "동일업종 상승률", position = 12)
+        @ApiModelProperty(notes = "영어 업종명", position = 11)
+        private String sector;
+        @ApiModelProperty(notes = "한국 업종명", position = 12)
+        private String sectorKor;
+        @ApiModelProperty(notes = "동일업종 상승률", position = 13)
         private BigDecimal yieldPercent;
-        @ApiModelProperty(notes = "동일업종 기업", position = 13)
-        private String companies;
-        @ApiModelProperty(notes = "동일업종 기업 수(-4 계산값)", position = 14)
+        @ApiModelProperty(notes = "동일업종 기업", position = 14)
+        private List<StockRes.Company> companies;
+        @ApiModelProperty(notes = "동일업종 기업 수(-4 계산값)", position = 15)
         private int companyCnt;
     }
 }
