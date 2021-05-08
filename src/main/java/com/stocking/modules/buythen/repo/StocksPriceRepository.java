@@ -3,6 +3,7 @@ package com.stocking.modules.buythen.repo;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,5 +15,5 @@ public interface StocksPriceRepository extends JpaRepository<StocksPrice, Long> 
     
     public List<StocksPrice> findByCodeInOrderByMarketCapDesc(String... code);
     
-    public Optional<List<StocksPrice>> findAllByIdNotIn(Long... id);
+    public Optional<List<StocksPrice>> findAllByIdNotIn(List<Long> ids, Sort sort);
 }

@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -84,9 +85,10 @@ public class BuyThenService {
      * @return
      * @throws Exception 
      */
+    @Cacheable(value = "stockList")
     public StockRes getStockList() throws Exception {
         
-        List<StocksPrice> stockPriceList = stocksPriceRepository.findAllByIdNotIn(804L)
+        List<StocksPrice> stockPriceList = stocksPriceRepository.findAllByIdNotIn(List.of(804L), Sort.by(Direction.DESC, "marketCap"))
                 .orElseThrow(() -> new Exception("조회 실패"));
         
         List<Company> resultList = stockPriceList
