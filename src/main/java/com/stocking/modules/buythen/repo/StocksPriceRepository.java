@@ -13,4 +13,6 @@ public interface StocksPriceRepository extends JpaRepository<StocksPrice, Long> 
     public List<StocksPrice> findBySectorYahoo(String sectorYahoo);
     
     public List<StocksPrice> findByCodeInOrderByMarketCapDesc(String... code);
+    
+    public Optional<List<StocksPrice>> findAllByIdNotIn(Long... id);
 }

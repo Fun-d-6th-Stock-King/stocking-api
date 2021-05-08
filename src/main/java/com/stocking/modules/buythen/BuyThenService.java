@@ -8,10 +8,11 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.querydsl.core.Tuple;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.DateTimePath;
@@ -84,14 +86,26 @@ public class BuyThenService {
      */
     public StockRes getStockList() throws Exception {
         
-        List<Company> resultList = stockRepository.findAllByMarket("KS")
-            .orElseThrow(() -> new Exception("조회 실패"))
-            .stream().map(vo -> 
-                Company.builder()
+        List<StocksPrice> stockPriceList = stocksPriceRepository.findAllByIdNotIn(804L)
+                .orElseThrow(() -> new Exception("조회 실패"));
+        
+        List<Company> resultList = stockPriceList
+            .stream().map(vo -> {
+                List<InvestDate> vaildDateList = new ArrayList<>();
+                if(vo.getPrice() != null) vaildDateList.add(InvestDate.DAY1);
+                if(vo.getPriceW1() != null) vaildDateList.add(InvestDate.WEEK1);
+                if(vo.getPriceM1() != null) vaildDateList.add(InvestDate.MONTH1);
+                if(vo.getPriceM6() != null) vaildDateList.add(InvestDate.MONTH6);
+                if(vo.getPriceY1() != null) vaildDateList.add(InvestDate.YEAR1);
+                if(vo.getPriceY5() != null) vaildDateList.add(InvestDate.YEAR5);
+                if(vo.getPriceY10() != null) vaildDateList.add(InvestDate.YEAR10);
+                
+                return Company.builder()
                     .company(vo.getCompany())
                     .code(vo.getCode())
-                    .build()
-            ).collect(Collectors.toList());
+                    .vaildDateList(vaildDateList)
+                    .build();
+            }).collect(Collectors.toList());
         
         return StockRes.builder()
             .companyList(resultList)
