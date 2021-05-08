@@ -3,11 +3,7 @@ package com.stocking.infra.common;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.cache.annotation.Cacheable;
@@ -49,6 +45,23 @@ public class StockUtils {
                 .currentTime(sdf.format(now))
                 .build();
         
+    }
+
+    /**
+     * 종목코드 배열을 받아서 현재가 총액 합산하여 반환
+     * @param codes
+     * @return
+     * @throws IOException
+     */
+    public BigDecimal getCurrentSumPrice(String[] codes) throws IOException{
+        Map<String, Stock> yahooStock = YahooFinance.get(codes);
+        BigDecimal sumPrice = new BigDecimal(0);
+
+        for (String key : yahooStock.keySet()) {
+            BigDecimal price = yahooStock.get(key).getQuote().getPrice();
+            sumPrice = sumPrice.add(price);
+        }
+        return sumPrice;
     }
     
     @Builder
