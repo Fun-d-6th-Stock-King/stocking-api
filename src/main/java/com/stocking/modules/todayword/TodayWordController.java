@@ -24,8 +24,7 @@ import springfox.documentation.annotations.ApiIgnore;
 @RestController
 @Api(value = "TodayWordController", tags = "오늘의 단어")
 public class TodayWordController {
-    
-    @Autowired
+
     private TodayWordService todayWordService;
     
     @ApiOperation(
@@ -70,4 +69,34 @@ public class TodayWordController {
             todayWordService.getTopWord(user)
         , HttpStatus.OK);
     }
+
+    @ApiOperation(
+            value = "오늘의 단어 조회",
+            response = TodayWordRes.class
+    )
+    @GetMapping("/{id}/todayWord")
+    public ResponseEntity<Object> getTodayWord(
+            @RequestAttribute(required = false) FirebaseUser user,
+            @ApiParam(value = "오늘의 단어 id", required = true) @PathVariable Long id) {
+        return new ResponseEntity<>(
+                todayWordService.getTodayWord(user, id)
+            , HttpStatus.OK);
+    }
+
+    @ApiOperation(
+            value = "오늘의 단어 수정",
+            response = Long.class
+    )
+    @PostMapping("/{id}/update")
+    public ResponseEntity<Long> updateTodayWord(
+            @ApiIgnore @RequestHeader(UserInterceptor.TOKEN) String token,
+            @RequestAttribute(required = false) FirebaseUser user,
+            @ApiParam(value = "오늘의 단어 id", required = true) @PathVariable Long id,
+            @RequestBody TodayWordReq todayWordReq) {
+
+        return new ResponseEntity<>(
+                todayWordService.updateTodayWord(user, todayWordReq, id)
+                , HttpStatus.OK);
+    }
+
 }

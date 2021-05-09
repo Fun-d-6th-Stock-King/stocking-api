@@ -12,11 +12,13 @@ import com.stocking.infra.common.BaseEntity;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "today_word")
 @AllArgsConstructor
+@NoArgsConstructor
 @SuperBuilder
 @Getter
 public class TodayWord extends BaseEntity {
