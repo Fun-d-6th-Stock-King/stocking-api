@@ -25,6 +25,7 @@ import springfox.documentation.annotations.ApiIgnore;
 @Api(value = "TodayWordController", tags = "오늘의 단어")
 public class TodayWordController {
 
+    @Autowired
     private TodayWordService todayWordService;
     
     @ApiOperation(
