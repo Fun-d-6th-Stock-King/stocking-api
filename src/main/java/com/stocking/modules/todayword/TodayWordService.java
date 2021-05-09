@@ -1,15 +1,5 @@
 package com.stocking.modules.todayword;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import com.stocking.modules.buyornot.repo.EvaluateBuySell;
-import com.stocking.modules.buythen.InvestDate;
-import com.stocking.modules.buythen.YieldSortRes;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
@@ -18,8 +8,15 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
-
+import com.stocking.modules.buyornot.repo.EvaluateLike;
+import com.stocking.modules.buyornot.repo.EvaluateLikeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +28,7 @@ public class TodayWordService {
     private final TodayWordLikeRepository todayWordLikeRepository;
     
     private final JPAQueryFactory queryFactory;
-    
+
     /**
      * 단어 저장
      * @param user
@@ -124,10 +121,41 @@ public class TodayWordService {
      * @param todayWordId
      * @return
      */
-    public Optional<TodayWord> getTodayWord(FirebaseUser user, Long todayWordId) {
-//        return todayWordRepository.findByTodayWordId(todayWordId, user.getUid());
-        return todayWordRepository.findById(todayWordId);
-//        return null;
+    public TodayWordRes getTodayWord(FirebaseUser user, Long todayWordId) {
+        QTodayWord qTodayWord = QTodayWord.todayWord;
+        QTodayWordLike qTodayWordLike = QTodayWordLike.todayWordLike;
+
+        NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
+
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qTodayWordLike.id)
+                            .from(qTodayWordLike)
+                            .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)
+                                    .and(qTodayWordLike.createdUid.eq(user.getUid()))).exists(),
+                    "userlike");
+        }
+
+        return queryFactory.select(
+                Projections.fields(TodayWordRes.class,
+                        qTodayWord.id,
+                        qTodayWord.wordName,
+                        qTodayWord.mean,
+                        qTodayWord.createdUid,
+                        qTodayWord.createdDate,
+                        ExpressionUtils.as(
+                                JPAExpressions.select(qTodayWordLike.id.count())
+                                        .from(qTodayWordLike)
+                                        .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
+                                aliasLikeCount),   // 좋아요 횟수
+                        userLike    // 사용자가 좋아요했는지 여부
+                )
+        ).from(qTodayWord)
+                .where(qTodayWord.id.eq(todayWordId))
+                .orderBy(aliasLikeCount.desc())
+                .limit(1)
+                .fetchOne();
     }
 
     /**

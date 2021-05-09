@@ -70,4 +70,17 @@ public class TodayWordController {
             todayWordService.getTopWord(user)
         , HttpStatus.OK);
     }
+
+    @ApiOperation(
+            value = "오늘의 단어 조회",
+            response = TodayWordRes.class
+    )
+    @GetMapping("/{id}/todayWord")
+    public ResponseEntity<Object> getTodayWord(
+            @RequestAttribute(required = false) FirebaseUser user,
+            @ApiParam(value = "오늘의 단어 id", required = true) @PathVariable Long id) {
+        return new ResponseEntity<>(
+                todayWordService.getTodayWord(user, id)
+            , HttpStatus.OK);
+    }
 }
