@@ -77,5 +77,6 @@
     -->
     <cache alias="stockCache" uses-template="template"></cache>
     <cache alias="stockHistCache" uses-template="template2"></cache>
+    <cache alias="stockList" uses-template="template2"></cache>
 
 </config>
