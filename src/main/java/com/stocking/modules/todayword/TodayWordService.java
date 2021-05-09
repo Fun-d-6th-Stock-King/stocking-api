@@ -153,8 +153,6 @@ public class TodayWordService {
                 )
         ).from(qTodayWord)
                 .where(qTodayWord.id.eq(todayWordId))
-                .orderBy(aliasLikeCount.desc())
-                .limit(1)
                 .fetchOne();
     }
 
