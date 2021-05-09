@@ -8,15 +8,11 @@ import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
-import com.stocking.modules.buyornot.repo.EvaluateLike;
-import com.stocking.modules.buyornot.repo.EvaluateLikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -160,10 +156,22 @@ public class TodayWordService {
      * 등록되어 있는 오늘의 단어 수정
      * @param user
      * @param todayWordReq
+     * @param todayWordId
      * @return
      */
-    public void updateTodayWord(FirebaseUser user, TodayWordReq todayWordReq) {
+    public Long updateTodayWord(FirebaseUser user, TodayWordReq todayWordReq, Long todayWordId) {
 
+        todayWordRepository.findByIdAndCreatedUid(todayWordId, user.getUid())
+                .ifPresent(vo -> {
+                    todayWordRepository.save(TodayWord.builder()
+                            .id(todayWordId)
+                            .wordName(todayWordReq.getWordName())
+                            .mean(todayWordReq.getMean())
+                            .createdUid(user.getUid())
+                            .build());
+                });
+
+        return todayWordId;
     }
 
 
