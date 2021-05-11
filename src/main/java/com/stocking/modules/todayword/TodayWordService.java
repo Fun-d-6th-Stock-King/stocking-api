@@ -18,7 +18,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TodayWordService {
 
-//    @Autowired
     private final TodayWordRepository todayWordRepository;
     
     private final TodayWordLikeRepository todayWordLikeRepository;
