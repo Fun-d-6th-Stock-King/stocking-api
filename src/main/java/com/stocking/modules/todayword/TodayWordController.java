@@ -1,23 +1,14 @@
 package com.stocking.modules.todayword;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.config.UserInterceptor;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import springfox.documentation.annotations.ApiIgnore;
 
 @RequestMapping(value = "/api/todayWord")
@@ -98,6 +89,25 @@ public class TodayWordController {
         return new ResponseEntity<>(
                 todayWordService.updateTodayWord(user, todayWordReq, id)
                 , HttpStatus.OK);
+    }
+
+    @ApiOperation(
+            value = "오늘의 단어 목록",
+            notes = "오늘의 단어 목록 / param - 정렬순서",
+            response = TodayWordSortRes.class
+    )
+    @GetMapping("/list")
+    public ResponseEntity<Object> getTodayWordList(
+            @RequestAttribute(required = false) FirebaseUser user,
+            @ApiParam(value = "정렬 조건", defaultValue = "LATELY", required = true) @RequestParam TodayWordOrder order,
+            @ApiParam(value = "페이지 크기", defaultValue = "10") @RequestParam(defaultValue = "10") int pageSize,
+            @ApiParam(value = "페이지 번호", defaultValue = "1") @RequestParam(defaultValue = "1") int pageNo
+    ) {
+
+        return new ResponseEntity<>(
+                todayWordService.getTodayWordSortList(user, order, pageSize, pageNo)
+                , HttpStatus.OK
+        );
     }
 
 }
