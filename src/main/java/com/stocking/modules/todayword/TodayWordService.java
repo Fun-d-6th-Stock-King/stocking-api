@@ -10,6 +10,11 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
+import com.stocking.modules.todayword.repo.*;
+import com.stocking.modules.todayword.vo.TodayWordOrder;
+import com.stocking.modules.todayword.vo.TodayWordReq;
+import com.stocking.modules.todayword.vo.TodayWordRes;
+import com.stocking.modules.todayword.vo.TodayWordSortRes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

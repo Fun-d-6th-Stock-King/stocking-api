@@ -1,6 +1,8 @@
 package com.stocking.modules.todayword;
 
 import com.stocking.infra.common.FirebaseUser;
+import com.stocking.modules.todayword.repo.TodayWord;
+import com.stocking.modules.todayword.repo.TodayWordRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;

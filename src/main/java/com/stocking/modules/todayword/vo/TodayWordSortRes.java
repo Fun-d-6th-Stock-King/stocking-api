@@ -1,4 +1,4 @@
-package com.stocking.modules.todayword;
+package com.stocking.modules.todayword.vo;
 
 import com.stocking.infra.common.PageInfo;
 import io.swagger.annotations.ApiModelProperty;

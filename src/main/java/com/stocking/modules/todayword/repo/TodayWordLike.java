@@ -1,4 +1,4 @@
-package com.stocking.modules.todayword;
+package com.stocking.modules.todayword.repo;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;

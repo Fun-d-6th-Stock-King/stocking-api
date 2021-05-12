@@ -1,4 +1,4 @@
-package com.stocking.modules.todayword;
+package com.stocking.modules.todayword.repo;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
