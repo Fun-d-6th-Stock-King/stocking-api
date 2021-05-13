@@ -70,7 +70,7 @@ public class BuyOrNotService {
      * @param searchWord
      * @return
      */
-    public BuyOrNotRes getBuyOrNotList(BuyOrNotOrder order, long pageSize, long pageNo, String searchWord) {
+    public BuyOrNotRes getBuyOrNotList(FirebaseUser user, BuyOrNotOrder order, long pageSize, long pageNo, String searchWord) {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
@@ -87,6 +87,16 @@ public class BuyOrNotService {
             case POPULARITY -> aliasLikeCount.desc();
         };
         
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        }
+        
         List<SimpleEvaluation> simpleEvaluationList = queryFactory.select(
                 Projections.fields(SimpleEvaluation.class,
                     qEvaluate.id,
@@ -99,7 +109,9 @@ public class BuyOrNotService {
                         JPAExpressions.select(qEvaluateLike.id.count())
                             .from(qEvaluateLike)
                             .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                        aliasLikeCount)   // 좋아요 횟수
+                        aliasLikeCount),   // 좋아요 횟수
+                    userLike,
+                    qEvaluate.createdDate
                 )
             ).from(qEvaluate)
             .where(builder)
@@ -171,7 +183,8 @@ public class BuyOrNotService {
                         .from(qEvaluateLike)
                         .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                     aliasLikeCount),   // 좋아요 횟수
-                userLike    // 사용자가 좋아요했는지 여부
+                userLike,    // 사용자가 좋아요했는지 여부
+                qEvaluate.createdDate
             )
         ).from(qEvaluate)
         .where(qEvaluate.code.eq(stockCode))
@@ -226,7 +239,7 @@ public class BuyOrNotService {
      * 오늘 베스트를 가장 많이 받은 평가
      * @return
      */
-    public SimpleEvaluation getTodayBest() {
+    public SimpleEvaluation getTodayBest(FirebaseUser user) {
         LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
         
         // q class
@@ -262,6 +275,17 @@ public class BuyOrNotService {
         }
         
         Long evaluateId = tuple.get(qEvaluateLike.evaluateId);
+        
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        }
+        
         return queryFactory.select(
               Projections.fields(SimpleEvaluation.class,
                   qEvaluate.id,
@@ -274,7 +298,9 @@ public class BuyOrNotService {
                       JPAExpressions.select(qEvaluateLike.id.count())
                           .from(qEvaluateLike)
                           .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                      aliasLikeCount)   // 좋아요 횟수
+                      aliasLikeCount),   // 좋아요 횟수
+                  userLike,
+                  qEvaluate.createdDate
               )
           ).from(qEvaluate)
           .where(qEvaluate.id.eq(evaluateId))
@@ -401,7 +427,8 @@ public class BuyOrNotService {
                         .from(qEvaluateLike)
                         .where(whereClause),
                     aliasLikeCount),   // 좋아요 횟수
-                userLike     // 사용자가 좋아요했는지 여부
+                userLike,     // 사용자가 좋아요했는지 여부
+                qEvaluate.createdDate
             )
         ).from(qEvaluate)
         .where(
@@ -467,7 +494,7 @@ public class BuyOrNotService {
      * 그래프 데이터임. (수정예정 - 캐시 처리하여) 
      * @param stockCode
      */
-    public StockChartRes getStockChart(String stockCode) {
+    public StockChartRes getStockChart(FirebaseUser user, String stockCode) {
         
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
@@ -476,6 +503,17 @@ public class BuyOrNotService {
         
         BooleanBuilder whereClause = new BooleanBuilder();
         whereClause.and(qEvaluateLike.evaluateId.eq(qEvaluate.id));
+        
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        
+        }
         
         Evaluation evaluation = queryFactory.select(
             Projections.fields(Evaluation.class,
@@ -490,7 +528,9 @@ public class BuyOrNotService {
                     JPAExpressions.select(qEvaluateLike.id.count())
                         .from(qEvaluateLike)
                         .where(whereClause),
-                    aliasLikeCount)   // 좋아요 횟수
+                aliasLikeCount),   // 좋아요 횟수
+                userLike,
+                qEvaluate.createdDate
             )
         ).from(qEvaluate)
         .where(qEvaluate.code.eq(stockCode))
@@ -510,7 +550,7 @@ public class BuyOrNotService {
      * @param rankListType
      * @return
      */
-    public BuySellRankRes getBuyRankList(BuySell buySell, RankListType rankListType) {
+    public BuySellRankRes getBuyRankList(FirebaseUser user, BuySell buySell, RankListType rankListType) {
         QEvaluateBuySell qEvaluateBuySell = QEvaluateBuySell.evaluateBuySell;
         QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
         QEvaluate qEvaluate = QEvaluate.evaluate;
@@ -556,6 +596,16 @@ public class BuyOrNotService {
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
+        Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
+        if(user.getUid() != null) {
+            userLike = ExpressionUtils.as(
+                    JPAExpressions.select(qEvaluateLike.id)
+                    .from(qEvaluateLike)
+                    .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)
+                            .and(qEvaluateLike.uid.eq(user.getUid()))).exists(),
+                "userlike");     // 사용자가 좋아요했는지 여부
+        }
+        
         SimpleEvaluation simpleEvaluation = Optional.ofNullable(queryFactory.select(
                 Projections.fields(SimpleEvaluation.class,
                     qEvaluate.id,
@@ -568,7 +618,9 @@ public class BuyOrNotService {
                         JPAExpressions.select(qEvaluateLike.id.count())
                             .from(qEvaluateLike)
                             .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
-                        aliasLikeCount)   // 좋아요 횟수
+                        aliasLikeCount),   // 좋아요 횟수
+                    userLike,
+                    qEvaluate.createdDate
                 )
             ).from(qEvaluate)
             .where(qEvaluate.code.eq(groupResultList.get(0).getCode()))

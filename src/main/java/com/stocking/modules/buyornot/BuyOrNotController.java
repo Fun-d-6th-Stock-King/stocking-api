@@ -50,11 +50,12 @@ public class BuyOrNotController {
         @ApiParam(value = "정렬 조건", defaultValue = "LATELY", required = true) @RequestParam BuyOrNotOrder order,
         @ApiParam(value = "페이지 크기", defaultValue = "10") @RequestParam(defaultValue = "10") int pageSize,
         @ApiParam(value = "페이지 번호", defaultValue = "1") @RequestParam(defaultValue = "1") int pageNo,
-        @ApiParam(value = "검색어", required = false) @RequestParam(required = false) String searchWord
+        @ApiParam(value = "검색어", required = false) @RequestParam(required = false) String searchWord,
+        @RequestAttribute FirebaseUser user
     ) {
         
         return new ResponseEntity<>(
-            buyOrNotService.getBuyOrNotList(order, pageSize, pageNo, searchWord)
+            buyOrNotService.getBuyOrNotList(user, order, pageSize, pageNo, searchWord)
         , HttpStatus.OK);
     }
     
@@ -116,11 +117,12 @@ public class BuyOrNotController {
     )
     @GetMapping("/{stockCode}/chart")
     public ResponseEntity<Object> getStockChart(
-        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable String stockCode,
+        @RequestAttribute FirebaseUser user
     ) throws IOException, ParseException {
         
         return new ResponseEntity<>(
-            buyOrNotService.getStockChart(stockCode)
+            buyOrNotService.getStockChart(user, stockCode)
         , HttpStatus.OK);
     }
 
@@ -148,10 +150,10 @@ public class BuyOrNotController {
         response = SimpleEvaluation.class
     )
     @GetMapping("/today-best")
-    public ResponseEntity<Object> todayBest() {
+    public ResponseEntity<Object> todayBest(@RequestAttribute FirebaseUser user) {
         
         return new ResponseEntity<>(
-            buyOrNotService.getTodayBest()
+            buyOrNotService.getTodayBest(user)
         , HttpStatus.OK);
     }
 
@@ -163,11 +165,12 @@ public class BuyOrNotController {
     @GetMapping("/getBuyRankList/{buySell}/{rankListType}")
     public ResponseEntity<Object> getBuyRankList(
         @ApiParam(value = "BUY, SELL", defaultValue = "BUY") @PathVariable BuySell buySell,
-        @ApiParam(value = "리스트타입", defaultValue = "SIMPLE") @PathVariable RankListType rankListType
+        @ApiParam(value = "리스트타입", defaultValue = "SIMPLE") @PathVariable RankListType rankListType,
+        @RequestAttribute FirebaseUser user
     ) {
         
         return new ResponseEntity<>(
-            buyOrNotService.getBuyRankList(buySell, rankListType)
+            buyOrNotService.getBuyRankList(user, buySell, rankListType)
         , HttpStatus.OK);
     }
     
