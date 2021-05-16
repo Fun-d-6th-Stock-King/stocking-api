@@ -38,6 +38,7 @@ public class EvaluationRes {
         private long likeCount;     // 좋아요 개수
         private boolean userlike;   // 사용자가 좋아요 했는지 여부
         private LocalDateTime createdDate;       // 작성일시
+        private String displayName; // 등록자 이름
         
         public String getCreatedDate() {
             return this.createdDate.format(DateTimeFormatter.ofPattern(FORMAT));

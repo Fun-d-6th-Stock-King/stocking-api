@@ -26,8 +26,7 @@ public class FireUserService {
         
         fireUserRepository
             .findByUid(decodedToken.getUid())
-            .ifPresentOrElse(null, () -> {
-                
+            .ifPresentOrElse(vo -> {}, () -> {
                 try {
                     UserRecord userRecord = FirebaseAuth.getInstance().getUser(decodedToken.getUid());
                     
