@@ -3,6 +3,7 @@ package com.stocking.modules.todayword;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.modules.todayword.repo.TodayWord;
 import com.stocking.modules.todayword.repo.TodayWordRepository;
+import com.stocking.modules.todayword.vo.TodayWordReq;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -13,6 +14,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import javax.transaction.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -28,10 +30,25 @@ class TodayWordServiceTest {
     @Transactional
     @Test
     void saveTodayWordTest() {
-        //given
+        //give
+        FirebaseUser testUser;
+        TodayWordReq todayWordReq = new TodayWordReq();
 
         //when
+        testUser = FirebaseUser.builder()
+                .uid("123123123")
+                .name("user")
+                .email("user@test.com")
+                .build();
+
+        todayWordReq.setWordName("단어");
+        todayWordReq.setMean("단어뜻");
+
+        todayWordService.saveTodayWord(testUser, todayWordReq);
+
         //then
+        assertTrue(todayWordRepository.findAll().stream()
+                .anyMatch(data -> data.getWordName().equals(todayWordReq.getWordName())));
     }
 
     @DisplayName("좋아요/안좋아요 (존재여부 체크함) 테스트")
