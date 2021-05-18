@@ -18,6 +18,9 @@ import com.stocking.modules.todayword.vo.TodayWordSortRes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -190,6 +193,9 @@ public class TodayWordService {
      * @return
      */
     public TodayWordSortRes getTodayWordSortList(FirebaseUser user, TodayWordOrder order, int pageSize, int pageNo) {
+        LocalDate now = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime startDt = now.atTime(0, 0, 0);
+        LocalDateTime endDt = now.atTime(23, 59, 59);
 
         QTodayWord qTodayWord = QTodayWord.todayWord;
         QTodayWordLike qTodayWordLike = QTodayWordLike.todayWordLike;
@@ -197,7 +203,7 @@ public class TodayWordService {
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
 
         Expression<Boolean> userLike = ExpressionUtils.as(Expressions.FALSE, "userlike");
-        if(user.getUid() != null) {
+        if (user.getUid() != null) {
             userLike = ExpressionUtils.as(
                     JPAExpressions.select(qTodayWordLike.id)
                             .from(qTodayWordLike)
@@ -210,29 +216,52 @@ public class TodayWordService {
         OrderSpecifier<?> orderSpecifier = switch (order) {
             case LATELY -> qTodayWord.id.desc();
             case POPULARITY -> aliasLikeCount.desc();
+            case WEEKLY_POPULARITY -> aliasLikeCount.desc();
         };
 
-        List<TodayWordRes> todayWordSortResList = queryFactory.select(
-                Projections.fields(TodayWordRes.class,
-                qTodayWord.id,
-                        qTodayWord.wordName,
-                        qTodayWord.mean,
-                        qTodayWord.createdUid,
-                        qTodayWord.createdDate,
-                        ExpressionUtils.as(
-                                JPAExpressions.select(qTodayWordLike.id.count())
-                                        .from(qTodayWordLike)
-                                        .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
-                                aliasLikeCount),
-                        userLike
+        List<TodayWordRes> todayWordSortResList;
+        if (order == TodayWordOrder.WEEKLY_POPULARITY) {
+            todayWordSortResList = queryFactory.select(
+                    Projections.fields(TodayWordRes.class,
+                            qTodayWord.id,
+                            qTodayWord.wordName,
+                            qTodayWord.mean,
+                            qTodayWord.createdUid,
+                            qTodayWord.createdDate,
+                            ExpressionUtils.as(
+                                    JPAExpressions.select(qTodayWordLike.id.count())
+                                            .from(qTodayWordLike)
+                                            .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
+                                    aliasLikeCount),
+                            userLike
                     )
-                ).from(qTodayWord)
-                .orderBy(orderSpecifier)
-                .offset((pageNo - 1) * pageSize)
-                .limit(pageSize)
-                .fetch();
-
-        System.out.println(todayWordSortResList.get(0).toString());
+            ).from(qTodayWord)
+                    .orderBy(orderSpecifier, qTodayWord.wordName.desc())
+                    .offset((pageNo - 1) * pageSize)
+                    .where(qTodayWord.createdDate.between(startDt.minusWeeks(1), endDt))
+                    .limit(pageSize)
+                    .fetch();
+        } else {
+            todayWordSortResList = queryFactory.select(
+                    Projections.fields(TodayWordRes.class,
+                            qTodayWord.id,
+                            qTodayWord.wordName,
+                            qTodayWord.mean,
+                            qTodayWord.createdUid,
+                            qTodayWord.createdDate,
+                            ExpressionUtils.as(
+                                    JPAExpressions.select(qTodayWordLike.id.count())
+                                            .from(qTodayWordLike)
+                                            .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
+                                    aliasLikeCount),
+                            userLike
+                    )
+            ).from(qTodayWord)
+                    .orderBy(orderSpecifier, qTodayWord.wordName.desc())
+                    .offset((pageNo - 1) * pageSize)
+                    .limit(pageSize)
+                    .fetch();
+        }
 
         long count = queryFactory.selectFrom(qTodayWord).fetchCount();
 
@@ -246,5 +275,4 @@ public class TodayWordService {
                     .build()
             ).build();
     }
-
 }
