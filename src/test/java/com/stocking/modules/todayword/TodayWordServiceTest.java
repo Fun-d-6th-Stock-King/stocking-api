@@ -2,6 +2,8 @@ package com.stocking.modules.todayword;
 
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.modules.todayword.repo.TodayWord;
+import com.stocking.modules.todayword.repo.TodayWordLike;
+import com.stocking.modules.todayword.repo.TodayWordLikeRepository;
 import com.stocking.modules.todayword.repo.TodayWordRepository;
 import com.stocking.modules.todayword.vo.TodayWordReq;
 import org.junit.jupiter.api.DisplayName;
@@ -26,8 +28,10 @@ class TodayWordServiceTest {
     @Autowired
     private TodayWordRepository todayWordRepository;
 
+    @Autowired
+    private TodayWordLikeRepository todayWordLikeRepository;
+
     @DisplayName("단어 저장 테스트")
-    @Transactional
     @Test
     void saveTodayWordTest() {
         //give
@@ -53,10 +57,32 @@ class TodayWordServiceTest {
 
     @DisplayName("좋아요/안좋아요 (존재여부 체크함) 테스트")
     @Test
+    @Transactional
     void saveTodayWordLikeTest() {
         //given
+        FirebaseUser testUser;
+        TodayWord todayWord;
+
         //when
+        testUser = FirebaseUser.builder()
+                .uid("123123123")
+                .name("user")
+                .email("user@test.com")
+                .build();
+
+        todayWord = TodayWord.builder()
+                .createdUid(testUser.getUid())
+                .wordName("테스트")
+                .mean("테스트한다는뜻")
+                .build();
+
+        todayWordRepository.save(todayWord);
+
+        todayWordService.saveTodayWordLike(testUser, todayWord.getId());
+
         //then
+        assertEquals(todayWordLikeRepository.findByTodayWordIdAndCreatedUid(todayWord.getId(), testUser.getUid())
+                        .get().getCreatedUid(), todayWord.getCreatedUid());
     }
 
     @DisplayName("좋아요가 가장많은 오늘의 단어 (사용자 정보 넘어오면 사용자가 좋아요했는지도 확인해줌) 테스트")
