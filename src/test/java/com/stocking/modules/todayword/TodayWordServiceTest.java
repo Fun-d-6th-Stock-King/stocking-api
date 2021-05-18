@@ -2,7 +2,6 @@ package com.stocking.modules.todayword;
 
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.modules.todayword.repo.TodayWord;
-import com.stocking.modules.todayword.repo.TodayWordLike;
 import com.stocking.modules.todayword.repo.TodayWordLikeRepository;
 import com.stocking.modules.todayword.repo.TodayWordRepository;
 import com.stocking.modules.todayword.vo.TodayWordReq;
@@ -33,6 +32,7 @@ class TodayWordServiceTest {
 
     @DisplayName("단어 저장 테스트")
     @Test
+    @Transactional
     void saveTodayWordTest() {
         //give
         FirebaseUser testUser;
@@ -45,8 +45,8 @@ class TodayWordServiceTest {
                 .email("user@test.com")
                 .build();
 
-        todayWordReq.setWordName("단어");
-        todayWordReq.setMean("단어뜻");
+        todayWordReq.setWordName("테스트");
+        todayWordReq.setMean("테스트한다는뜻");
 
         todayWordService.saveTodayWord(testUser, todayWordReq);
 
@@ -87,6 +87,7 @@ class TodayWordServiceTest {
 
     @DisplayName("좋아요가 가장많은 오늘의 단어 (사용자 정보 넘어오면 사용자가 좋아요했는지도 확인해줌) 테스트")
     @Test
+    @Transactional
     void getTopWordTest() {
         //given
         //when
@@ -132,6 +133,7 @@ class TodayWordServiceTest {
 
     @DisplayName("최근 기준으로 등록된 오늘의 단어 목록 조회 테스트")
     @Test
+    @Transactional
     void getRecentlyTodayWordSortListTest() {
         //given
         //when
