@@ -91,9 +91,8 @@ class TodayWordServiceTest {
         todayWordRepository.save(todayWord);
 
         //then
-        assertEquals(todayWordRepository.findByIdAndCreatedUid(
-                todayWord.getId() ,testUser.getUid()).get()
-                .getWordName(), todayWord.getWordName());
+        assertEquals(todayWordService.getTodayWord(testUser, todayWord.getId()).getWordName(),
+                     todayWord.getWordName());
     }
 
     @DisplayName("오늘의 단어 수정 테스트")
