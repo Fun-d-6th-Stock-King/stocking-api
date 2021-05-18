@@ -17,6 +17,7 @@ import com.stocking.infra.config.UserInterceptor;
 import com.stocking.modules.buyornot.repo.Evaluate;
 import com.stocking.modules.buyornot.repo.EvaluateComment;
 import com.stocking.modules.buyornot.vo.CommentReq;
+import com.stocking.modules.buyornot.vo.CompanyRes;
 import com.stocking.modules.buyornot.vo.EvaluateReq;
 import com.stocking.modules.buyornot.vo.EvaluationDetailRes;
 
@@ -92,6 +93,20 @@ public class EvaluateController {
     ) {
         return new ResponseEntity<>(
             evaluateService.getDetail(evaluateId, user)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "사용자가 평가하지 않은종목 목록조회",
+        notes = "사용자가 평가하지 않은종목 목록조회",
+        response = CompanyRes.class
+    )
+    @GetMapping("/no-eval-list")
+    public ResponseEntity<Object> getNoEvalList(
+        @RequestAttribute FirebaseUser user
+    ) {
+        return new ResponseEntity<>(
+        evaluateService.getNoEvalList(user)
         , HttpStatus.OK);
     }
 }

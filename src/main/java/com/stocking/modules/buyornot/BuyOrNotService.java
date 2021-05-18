@@ -47,6 +47,7 @@ import com.stocking.modules.buyornot.vo.EvaluationRes;
 import com.stocking.modules.buyornot.vo.EvaluationRes.Evaluation;
 import com.stocking.modules.buyornot.vo.StockChartRes;
 import com.stocking.modules.buythen.repo.QStocksPrice;
+import com.stocking.modules.firebase.QFireUser;
 
 import lombok.RequiredArgsConstructor;
 
@@ -74,6 +75,7 @@ public class BuyOrNotService {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -111,9 +113,11 @@ public class BuyOrNotService {
                             .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                         aliasLikeCount),   // 좋아요 횟수
                     userLike,
-                    qEvaluate.createdDate
+                    qEvaluate.createdDate,
+                    qFireUser.displayName
                 )
             ).from(qEvaluate)
+            .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluate.createdUid))
             .where(builder)
             .orderBy(orderSpecifier)
             .offset((pageNo - 1) * pageSize)
@@ -150,6 +154,7 @@ public class BuyOrNotService {
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -184,9 +189,11 @@ public class BuyOrNotService {
                         .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                     aliasLikeCount),   // 좋아요 횟수
                 userLike,    // 사용자가 좋아요했는지 여부
-                qEvaluate.createdDate
+                qEvaluate.createdDate,
+                qFireUser.displayName
             )
         ).from(qEvaluate)
+        .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluate.createdUid))
         .where(qEvaluate.code.eq(stockCode))
         .orderBy(orderSpecifier)
         .offset((pageNo - 1) * pageSize)
@@ -207,10 +214,12 @@ public class BuyOrNotService {
                             qEvaluateComment.id,
                             qEvaluateComment.comment,
                             qEvaluateComment.createdDate,
-                            qEvaluateComment.createdUid.as("uid")
+                            qEvaluateComment.createdUid.as("uid"),
+                            qFireUser.displayName
                             )
                         )
                     .from(qEvaluateComment)
+                    .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluateComment.createdUid))
                     .where(qEvaluateComment.evaluateId.eq(vo.getId()))
                     .orderBy(qEvaluateComment.createdDate.desc())
                     .limit(1)
@@ -245,6 +254,7 @@ public class BuyOrNotService {
         // q class
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -300,9 +310,11 @@ public class BuyOrNotService {
                           .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                       aliasLikeCount),   // 좋아요 횟수
                   userLike,
-                  qEvaluate.createdDate
+                  qEvaluate.createdDate,
+                  qFireUser.displayName
               )
           ).from(qEvaluate)
+          .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluate.createdUid))
           .where(qEvaluate.id.eq(evaluateId))
           .fetchOne();
     }
@@ -385,6 +397,7 @@ public class BuyOrNotService {
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
         QEvaluateComment qEvaluateComment = QEvaluateComment.evaluateComment;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -428,9 +441,11 @@ public class BuyOrNotService {
                         .where(whereClause),
                     aliasLikeCount),   // 좋아요 횟수
                 userLike,     // 사용자가 좋아요했는지 여부
-                qEvaluate.createdDate
+                qEvaluate.createdDate,
+                qFireUser.displayName
             )
         ).from(qEvaluate)
+        .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluate.createdUid))
         .where(
             qEvaluate.code.eq(stockCode)
             .and(qEvaluate.id.in(JPAExpressions.select(qEvaluateLike.evaluateId)
@@ -456,10 +471,12 @@ public class BuyOrNotService {
                             qEvaluateComment.id,
                             qEvaluateComment.comment,
                             qEvaluateComment.createdUid.as("uid"),
-                            qEvaluateComment.createdDate
+                            qEvaluateComment.createdDate,
+                            qFireUser.displayName
                             )
                         )
                     .from(qEvaluateComment)
+                    .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluateComment.createdUid))
                     .where(qEvaluateComment.evaluateId.eq(vo.getId()))
                     .orderBy(qEvaluateComment.createdDate.desc())
                     .limit(1)
@@ -498,6 +515,7 @@ public class BuyOrNotService {
         
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -530,9 +548,11 @@ public class BuyOrNotService {
                         .where(whereClause),
                 aliasLikeCount),   // 좋아요 횟수
                 userLike,
-                qEvaluate.createdDate
+                qEvaluate.createdDate,
+                qFireUser.displayName
             )
         ).from(qEvaluate)
+        .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluate.createdUid))
         .where(qEvaluate.code.eq(stockCode))
         .orderBy(aliasLikeCount.desc())
         .limit(1)
@@ -555,6 +575,7 @@ public class BuyOrNotService {
         QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
         QEvaluate qEvaluate = QEvaluate.evaluate;
         QEvaluateLike qEvaluateLike = QEvaluateLike.evaluateLike;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberExpression<Long> buyCnt = qEvaluateBuySell.buySell
             .when(BuySell.BUY).then(1L).otherwise(0L);
@@ -620,9 +641,11 @@ public class BuyOrNotService {
                             .where(qEvaluateLike.evaluateId.eq(qEvaluate.id)),
                         aliasLikeCount),   // 좋아요 횟수
                     userLike,
-                    qEvaluate.createdDate
+                    qEvaluate.createdDate,
+                    qFireUser.displayName
                 )
             ).from(qEvaluate)
+            .leftJoin(qFireUser).on(qFireUser.uid.eq(qEvaluate.createdUid))
             .where(qEvaluate.code.eq(groupResultList.get(0).getCode()))
             .orderBy(aliasLikeCount.desc())
             .limit(1)

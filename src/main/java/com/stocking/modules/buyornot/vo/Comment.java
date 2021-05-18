@@ -18,6 +18,7 @@ public class Comment {
     private String comment;         // 코멘트
     private String uid;             // 작성자 uid
     private LocalDateTime createdDate;       // 작성일시
+    private String displayName; // 등록자 이름
     
     public String getCreatedDate() {
         

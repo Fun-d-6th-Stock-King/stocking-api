@@ -3,11 +3,19 @@ package com.stocking.infra.common;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
+
+import com.stocking.modules.stock.StockRepository;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +29,11 @@ import yahoofinance.histquotes.Interval;
 @Component
 @Slf4j
 public class StockUtils {
+    
+    public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
+    
+    @Autowired
+    private StockRepository stockRepository;
 
     /**
      * 종목코드를 받아서 현재가, 마지막거래일시를 실시간으로 받아옴(1시간단위캐시)
@@ -33,16 +46,15 @@ public class StockUtils {
         // kospi 일 때만 symbol 규칙이 변경됨
         Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
         Date now = new Date();
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
-                .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .lastTradeTime(SDF.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent())
                 .yearHigh(yahooStock.getQuote().getYearHigh())
                 .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
                 .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
-                .currentTime(sdf.format(now))
+                .currentTime(SDF.format(now))
                 .build();
         
     }
@@ -110,9 +122,14 @@ public class StockUtils {
         HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
             .orElseThrow(NoSuchElementException::new); 
         
+        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
+        
         return StockHist.builder()
                 .code(code)
                 .price(yahooStock.getQuote().getPrice())                     // 현재 시세
+                .lastTradeTime(SDF.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .company(stockDB != null ? stockDB.getCompany() : "")
+                .change(yahooStock.getQuote().getChange())
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent()) // 등락률
                 .maxQuote(maxQuote)
                 .minQuote(minQuote)
@@ -125,7 +142,10 @@ public class StockUtils {
     @Getter
     public static class StockHist{
         private String code;
+        private String company;
         private BigDecimal price;
+        private String lastTradeTime;
+        private BigDecimal change;
         private BigDecimal changeInPercent;
         private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
         private HistoricalQuote minQuote;
