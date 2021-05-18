@@ -1,7 +1,5 @@
 package com.stocking.modules.stock;
 
-import com.stocking.modules.account.AccountRepository;
-import com.stocking.modules.account.AccountService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
