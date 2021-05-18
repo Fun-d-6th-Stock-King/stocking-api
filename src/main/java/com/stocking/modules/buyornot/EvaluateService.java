@@ -6,10 +6,12 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -21,12 +23,16 @@ import com.stocking.modules.buyornot.repo.EvaluateLike;
 import com.stocking.modules.buyornot.repo.EvaluateLikeRepository;
 import com.stocking.modules.buyornot.repo.EvaluateRepository;
 import com.stocking.modules.buyornot.repo.QEvaluate;
+import com.stocking.modules.buyornot.repo.QEvaluateBuySell;
 import com.stocking.modules.buyornot.repo.QEvaluateComment;
 import com.stocking.modules.buyornot.repo.QEvaluateLike;
 import com.stocking.modules.buyornot.vo.Comment;
+import com.stocking.modules.buyornot.vo.CompanyRes;
+import com.stocking.modules.buyornot.vo.CompanyRes.Company;
 import com.stocking.modules.buyornot.vo.EvaluateReq;
 import com.stocking.modules.buyornot.vo.EvaluationDetailRes;
 import com.stocking.modules.buyornot.vo.EvaluationDetailRes.Evaluation;
+import com.stocking.modules.buythen.repo.QStocksPrice;
 import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
@@ -173,6 +179,40 @@ public class EvaluateService {
         return EvaluationDetailRes.builder()
             .evaluation(evaluation)
             .commentList(commentList)
+            .build();
+    }
+    
+    /**
+     * 랜덤 종목 리스트, 토큰 없는 경우 그냥 뿌림
+     * @param user
+     * @return
+     */
+    public CompanyRes getNoEvalList(FirebaseUser user) {
+        
+        QEvaluateBuySell qEvaluateBuySell = QEvaluateBuySell.evaluateBuySell;
+        QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
+        
+        BooleanBuilder booleanBuilder = new BooleanBuilder();
+        
+        if(user.getUid() != null) {
+            booleanBuilder.and(qStocksPrice.code.notIn(
+                JPAExpressions.select(qEvaluateBuySell.code)
+                    .from(qEvaluateBuySell).where(qEvaluateBuySell.uid.eq(user.getUid()))
+            ));
+        }
+        
+        return CompanyRes.builder()
+            .companyList(
+                queryFactory.select(
+                    Projections.fields(Company.class,
+                            qStocksPrice.code,
+                            qStocksPrice.company.as("name")
+                        )
+                    ).from(qStocksPrice)
+                    .where(booleanBuilder)
+                    .orderBy(NumberExpression.random().asc())
+                    .limit(10)
+                    .fetch())
             .build();
     }
 }
