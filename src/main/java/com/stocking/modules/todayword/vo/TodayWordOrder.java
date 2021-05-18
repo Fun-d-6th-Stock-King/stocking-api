@@ -1,5 +1,5 @@
 package com.stocking.modules.todayword.vo;
 
 public enum TodayWordOrder {
-    LATELY, POPULARITY;
+    LATELY, POPULARITY, WEEKLY_POPULARITY;
 }
