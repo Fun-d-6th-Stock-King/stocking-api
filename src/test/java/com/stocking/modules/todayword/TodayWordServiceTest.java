@@ -127,8 +127,33 @@ class TodayWordServiceTest {
     @Transactional
     void updateTodayWordTest() {
         //given
+        FirebaseUser testUser;
+        TodayWord todayWord;
+        TodayWordReq updateTodayWordReq = new TodayWordReq();
+
         //when
+        testUser = FirebaseUser.builder()
+                .uid("123123123")
+                .name("user")
+                .email("user@test.com")
+                .build();
+
+        todayWord = TodayWord.builder()
+                .createdUid(testUser.getUid())
+                .wordName("테스트")
+                .mean("테스트한다는뜻")
+                .build();
+
+        updateTodayWordReq.setWordName("수정테스트");
+        updateTodayWordReq.setMean("수정테스트한다는뜻");
+
+        todayWordRepository.save(todayWord);
+
+        todayWordService.updateTodayWord(testUser, updateTodayWordReq, todayWord.getId());
+
         //then
+        assertEquals(todayWordRepository.findByIdAndCreatedUid(todayWord.getId(), testUser.getUid())
+                .get().getWordName(), updateTodayWordReq.getWordName());
     }
 
     @DisplayName("최근 기준으로 등록된 오늘의 단어 목록 조회 테스트")
