@@ -11,7 +11,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.transaction.Transactional;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,9 +25,11 @@ class TodayWordServiceTest {
     private TodayWordRepository todayWordRepository;
 
     @DisplayName("단어 저장 테스트")
+    @Transactional
     @Test
     void saveTodayWordTest() {
         //given
+
         //when
         //then
     }
@@ -73,8 +74,9 @@ class TodayWordServiceTest {
         todayWordRepository.save(todayWord);
 
         //then
-//        Optional<TodayWord> result = todayWordService.getTodayWord(testUser, todayWord.getId());
-//        assertEquals(result.get().getWordName(), todayWord.getWordName());
+        assertEquals(todayWordRepository.findByIdAndCreatedUid(
+                todayWord.getId() ,testUser.getUid()).get()
+                .getWordName(), todayWord.getWordName());
     }
 
     @DisplayName("오늘의 단어 수정 테스트")
