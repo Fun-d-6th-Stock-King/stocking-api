@@ -3,6 +3,8 @@ package com.stocking.infra.common;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
@@ -30,7 +32,7 @@ import yahoofinance.histquotes.Interval;
 @Slf4j
 public class StockUtils {
     
-    public static SimpleDateFormat SDF = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
     
     @Autowired
     private StockRepository stockRepository;
@@ -49,12 +51,12 @@ public class StockUtils {
         Date now = new Date();
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
-                .lastTradeTime(SDF.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent())
                 .yearHigh(yahooStock.getQuote().getYearHigh())
                 .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
                 .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
-                .currentTime(SDF.format(now))
+                .currentTime(sdf.format(now))
                 .build();
         
     }
@@ -127,7 +129,7 @@ public class StockUtils {
         return StockHist.builder()
                 .code(code)
                 .price(yahooStock.getQuote().getPrice())                     // 현재 시세
-                .lastTradeTime(SDF.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .company(stockDB != null ? stockDB.getCompany() : "")
                 .change(yahooStock.getQuote().getChange())
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent()) // 등락률
@@ -150,5 +152,35 @@ public class StockUtils {
         private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
         private HistoricalQuote minQuote;
         private List<HistoricalQuote> quoteList;
+    }
+    
+    /**
+     * 일시를 받아서 초전,분전,시전,일전을 계산해서 반환
+     * @param localDateTime
+     * @return
+     */
+    public static String beforeTime(LocalDateTime localDateTime) {
+        if(localDateTime == null) return "";
+
+        long diff = ChronoUnit.MILLIS.between(localDateTime, LocalDateTime.now()) / 1000L;
+
+        long hour = diff / 3600;
+        diff = diff % 3600;
+        long min = diff / 60;
+        long sec = diff % 60;
+
+        String ret;
+        if (hour > 24) {
+            ret = hour / 24 + "일 전";
+        } else if (hour > 0) {
+            ret = hour + "시간 전";
+        } else if (min > 0) {
+            ret = min + "분 전";
+        } else if (sec > 0) {
+            ret = sec + "초 전";
+        } else {
+            ret = "지금";
+        }
+        return ret;
     }
 }
