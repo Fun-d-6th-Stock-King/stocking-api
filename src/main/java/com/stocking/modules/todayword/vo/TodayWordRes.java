@@ -2,6 +2,8 @@ package com.stocking.modules.todayword.vo;
 
 import java.time.LocalDateTime;
 
+import com.stocking.infra.common.StockUtils;
+
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,4 +36,14 @@ public class TodayWordRes {
     
     @ApiModelProperty(notes = "사용자의 좋아요 여부", position = 7)
     private boolean userlike;
+    
+    @ApiModelProperty(notes = "사용자명", position = 8)
+    private String displayName;
+    
+    @ApiModelProperty(notes = "작성시간-text", position = 9)
+    private String createdDateText;
+    
+    public String getCreatedDateText() {
+        return StockUtils.beforeTime(this.createdDate);
+    }
 }

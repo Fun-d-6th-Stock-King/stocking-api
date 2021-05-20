@@ -1,5 +1,14 @@
 package com.stocking.modules.todayword;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.OrderSpecifier;
@@ -10,20 +19,19 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
-import com.stocking.modules.todayword.repo.*;
+import com.stocking.modules.firebase.QFireUser;
+import com.stocking.modules.todayword.repo.QTodayWord;
+import com.stocking.modules.todayword.repo.QTodayWordLike;
+import com.stocking.modules.todayword.repo.TodayWord;
+import com.stocking.modules.todayword.repo.TodayWordLike;
+import com.stocking.modules.todayword.repo.TodayWordLikeRepository;
+import com.stocking.modules.todayword.repo.TodayWordRepository;
 import com.stocking.modules.todayword.vo.TodayWordOrder;
 import com.stocking.modules.todayword.vo.TodayWordReq;
 import com.stocking.modules.todayword.vo.TodayWordRes;
 import com.stocking.modules.todayword.vo.TodayWordSortRes;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +95,7 @@ public class TodayWordService {
     public TodayWordRes getTopWord(FirebaseUser user) {
         QTodayWord qTodayWord = QTodayWord.todayWord;
         QTodayWordLike qTodayWordLike = QTodayWordLike.todayWordLike;
+        QFireUser qFireUser = QFireUser.fireUser;
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
         
@@ -112,9 +121,11 @@ public class TodayWordService {
                             .from(qTodayWordLike)
                             .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
                         aliasLikeCount),   // 좋아요 횟수
-                    userLike    // 사용자가 좋아요했는지 여부
+                    userLike,    // 사용자가 좋아요했는지 여부
+                    qFireUser.displayName
                 )
             ).from(qTodayWord)
+            .leftJoin(qFireUser).on(qFireUser.uid.eq(qTodayWord.createdUid))
             .orderBy(aliasLikeCount.desc())
             .limit(1)
             .fetchOne();
@@ -130,6 +141,7 @@ public class TodayWordService {
     public TodayWordRes getTodayWord(FirebaseUser user, Long todayWordId) {
         QTodayWord qTodayWord = QTodayWord.todayWord;
         QTodayWordLike qTodayWordLike = QTodayWordLike.todayWordLike;
+        QFireUser qFireUser = QFireUser.fireUser;
 
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
 
@@ -155,9 +167,11 @@ public class TodayWordService {
                                         .from(qTodayWordLike)
                                         .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
                                 aliasLikeCount),   // 좋아요 횟수
-                        userLike    // 사용자가 좋아요했는지 여부
-                )
-        ).from(qTodayWord)
+                        userLike,    // 사용자가 좋아요했는지 여부
+                        qFireUser.displayName
+                    )
+                ).from(qTodayWord)
+                .leftJoin(qFireUser).on(qFireUser.uid.eq(qTodayWord.createdUid))
                 .where(qTodayWord.id.eq(todayWordId))
                 .fetchOne();
     }
@@ -199,6 +213,7 @@ public class TodayWordService {
 
         QTodayWord qTodayWord = QTodayWord.todayWord;
         QTodayWordLike qTodayWordLike = QTodayWordLike.todayWordLike;
+        QFireUser qFireUser = QFireUser.fireUser;
 
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, "likeCount");
 
@@ -233,9 +248,11 @@ public class TodayWordService {
                                             .from(qTodayWordLike)
                                             .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
                                     aliasLikeCount),
-                            userLike
+                            userLike,
+                            qFireUser.displayName
                     )
             ).from(qTodayWord)
+                    .leftJoin(qFireUser).on(qFireUser.uid.eq(qTodayWord.createdUid))
                     .orderBy(orderSpecifier, qTodayWord.wordName.desc())
                     .offset((pageNo - 1) * pageSize)
                     .where(qTodayWord.createdDate.between(startDt.minusWeeks(1), endDt))
@@ -254,9 +271,11 @@ public class TodayWordService {
                                             .from(qTodayWordLike)
                                             .where(qTodayWordLike.todayWordId.eq(qTodayWord.id)),
                                     aliasLikeCount),
-                            userLike
+                            userLike,
+                            qFireUser.displayName
                     )
             ).from(qTodayWord)
+                    .leftJoin(qFireUser).on(qFireUser.uid.eq(qTodayWord.createdUid))
                     .orderBy(orderSpecifier, qTodayWord.wordName.desc())
                     .offset((pageNo - 1) * pageSize)
                     .limit(pageSize)
