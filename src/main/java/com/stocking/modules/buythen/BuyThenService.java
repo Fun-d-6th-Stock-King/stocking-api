@@ -56,6 +56,9 @@ import com.stocking.modules.stock.StockRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
+import static com.stocking.modules.buythen.ExceptionType.DATE_EXCEPTION;
+import static com.stocking.modules.buythen.ExceptionType.PRICE_EXCEPTION;
+
 @Service
 @Slf4j
 public class BuyThenService {
@@ -142,8 +145,23 @@ public class BuyThenService {
             case YEAR5 -> stockPrice.getPriceY5();
             case YEAR10 -> stockPrice.getPriceY10();
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
-        }).orElseThrow(() -> new Exception(stock.getCompany() + " 는(은) " + investDate.getName() + " 데이터가 없습니다."));
-        
+        }).orElseThrow(() ->
+            BuyThenException.builder()
+                .exceptionType(DATE_EXCEPTION)
+                .givenDate(investDate)
+                .correctDate(investDate)
+                .build()
+        );
+
+        // 투자가 < 1주 가격일 때 종목값 에러 처리
+        if (oldStockPrice.compareTo(investPrice) > 0)  {
+            throw BuyThenException.builder()
+                    .exceptionType(PRICE_EXCEPTION)
+                    .givenPrice(investPrice)
+                    .correctPrice(oldStockPrice)
+                    .build();
+        }
+
         // 종가일자
         LocalDateTime oldCloseDate = switch (investDate) {    
             case DAY1 -> stockPrice.getLastTradeDate();

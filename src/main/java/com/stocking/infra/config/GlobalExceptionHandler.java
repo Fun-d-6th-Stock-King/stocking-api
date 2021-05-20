@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.stocking.modules.buythen.BuyThenException;
 import org.springframework.web.bind.ServletRequestBindingException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -46,6 +47,13 @@ public class GlobalExceptionHandler {
         }
         
         return resultMap;
+    }
+
+    @ExceptionHandler(value = {BuyThenException.class})
+    @ResponseBody
+    public BuyThenException buyThenExceptionProcess(HttpServletResponse httpServletResponse, BuyThenException exception) {
+        httpServletResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        return exception;
     }
     
     public static String getPrintStackTrace(Exception e) {
