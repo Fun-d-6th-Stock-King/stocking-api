@@ -27,6 +27,7 @@ import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
 import yahoofinance.histquotes.HistoricalQuote;
 import yahoofinance.histquotes.Interval;
+import yahoofinance.quotes.stock.StockQuote;
 
 @Component
 @Slf4j
@@ -139,6 +140,73 @@ public class StockUtils {
                 .build();
     }
     
+    /**
+     * 종목의 장중, 주간, 연간 최고, 최저가 가져오기.
+     * @param code
+     * @return
+     */
+    @Cacheable(value = "stockHighLow", key = "#code")
+    public StockHighLow getStockHighLow(String code) {
+        Stock yahooStock = null;
+        List<HistoricalQuote> quoteList = null;
+        
+        Comparator<HistoricalQuote> comparatorByHigh = 
+                (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 :x1.getHigh().compareTo(x2.getHigh());
+                
+        Comparator<HistoricalQuote> comparatorByLow = 
+                (x1, x2) -> (x1.getLow() == null || x2.getLow() == null) ? 0 :x1.getLow().compareTo(x2.getLow());
+        
+        try {
+            yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
+            Calendar startDt = Calendar.getInstance();
+            Calendar endDt = Calendar.getInstance();
+            startDt.add(Calendar.DATE, -10);
+            quoteList = yahooStock.getHistory(startDt, endDt, Interval.DAILY);
+        } catch (IOException e) {
+            log.error(code + " historical data 가져오는데 실패하였습니다.", e);
+        }
+        
+        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
+                .orElseThrow(NoSuchElementException::new);
+            
+        HistoricalQuote minQuote = quoteList.stream().min(comparatorByLow)
+            .orElseThrow(NoSuchElementException::new);
+        
+        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
+        
+        StockQuote quote = yahooStock.getQuote();
+        
+        return StockHighLow.builder()
+                .code(code)
+                .company(stockDB != null ? stockDB.getCompany() : "")
+                .price(quote.getPrice())
+                .changeInPercent(quote.getChangeInPercent())
+                .dayHigh(quote.getDayHigh())
+                .dayLow(quote.getDayLow())
+                .weekHigh(maxQuote.getHigh())
+                .weekLow(minQuote.getLow())
+                .yearHigh(quote.getYearHigh())
+                .yearLow(quote.getYearLow())
+                .build();
+    }
+    
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class StockHighLow{
+        private String code;
+        private String company;
+        private BigDecimal price;
+        private BigDecimal changeInPercent;
+        
+        private BigDecimal dayHigh;
+        private BigDecimal dayLow;
+        private BigDecimal weekHigh;
+        private BigDecimal weekLow;
+        private BigDecimal yearHigh;
+        private BigDecimal yearLow;
+    }
+    
     @Builder
     @AllArgsConstructor
     @Getter
@@ -160,9 +228,9 @@ public class StockUtils {
      * @return
      */
     public static String beforeTime(LocalDateTime localDateTime) {
-        if(localDateTime == null) return "";
+        if(localDateTime == null) return ""; // 기저사례
 
-        long diff = ChronoUnit.MILLIS.between(localDateTime, LocalDateTime.now()) / 1000L;
+        long diff = ChronoUnit.SECONDS.between(localDateTime, LocalDateTime.now());
 
         long hour = diff / 3600;
         diff = diff % 3600;

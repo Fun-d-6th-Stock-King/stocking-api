@@ -31,12 +31,14 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.DateTimePath;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.NumberPath;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
+import com.stocking.infra.common.StockUtils.StockHighLow;
 import com.stocking.infra.common.StockUtils.StockHist;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
@@ -93,19 +95,10 @@ public class BuyThenService {
         
         List<Company> resultList = stockPriceList
             .stream().map(vo -> {
-                List<InvestDate> vaildDateList = new ArrayList<>();
-                if(vo.getPrice() != null) vaildDateList.add(InvestDate.DAY1);
-                if(vo.getPriceW1() != null) vaildDateList.add(InvestDate.WEEK1);
-                if(vo.getPriceM1() != null) vaildDateList.add(InvestDate.MONTH1);
-                if(vo.getPriceM6() != null) vaildDateList.add(InvestDate.MONTH6);
-                if(vo.getPriceY1() != null) vaildDateList.add(InvestDate.YEAR1);
-                if(vo.getPriceY5() != null) vaildDateList.add(InvestDate.YEAR5);
-                if(vo.getPriceY10() != null) vaildDateList.add(InvestDate.YEAR10);
                 
                 return Company.builder()
                     .company(vo.getCompany())
                     .code(vo.getCode())
-                    .vaildDateList(vaildDateList)
                     .build();
             }).collect(Collectors.toList());
         
@@ -433,7 +426,7 @@ public class BuyThenService {
                 .pageInfo(
                     PageInfo.builder()
                         .count(page.getTotalElements())
-                        .pageNo(page.getNumber())
+                        .pageNo(pageNo)
                         .pageSize(page.getSize())
                         .build()
                 )
@@ -596,5 +589,24 @@ public class BuyThenService {
                     .maxQuote(stockHist.getMaxQuote())
                     .build();
             }).collect(Collectors.toList());
+    }
+    
+    /**
+     * 종목의 장중, 주간, 연간 최고, 최저가 가져오기.
+     * @return
+     */
+    public List<StockHighLow> getHighLow() {
+        QStocksPrice qStocksPrice = QStocksPrice.stocksPrice;
+        
+        List<StockHighLow> result = new ArrayList<>();
+        
+        List<String> codeList = queryFactory.select(qStocksPrice.code).from(qStocksPrice)
+                .orderBy(NumberExpression.random().asc())
+                .limit(4)
+                .fetch();
+        
+        codeList.forEach(code -> result.add(stockUtils.getStockHighLow(code)));
+        
+        return result ;
     }
 }

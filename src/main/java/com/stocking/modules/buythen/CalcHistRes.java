@@ -14,10 +14,12 @@ import lombok.Data;
 @AllArgsConstructor
 @Builder
 public class CalcHistRes {
+
+    @ApiModelProperty(notes = "pageInfo", required=false, position=1)
+    private PageInfo pageInfo;
 	
+    @ApiModelProperty(notes = "calculationHistList", required=false, position=2)
 	private List<CalculationHist> calculationHistList;
-	
-	private PageInfo pageInfo;
  
 	@Data
 	@AllArgsConstructor

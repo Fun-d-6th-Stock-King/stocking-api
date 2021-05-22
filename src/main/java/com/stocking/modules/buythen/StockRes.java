@@ -1,6 +1,5 @@
 package com.stocking.modules.buythen;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.swagger.annotations.ApiModelProperty;
@@ -28,7 +27,5 @@ public class StockRes {
         @ApiModelProperty(notes = "종목코드", position = 2)
         private String code;
         
-        @ApiModelProperty(notes = "조회 가능한 날짜", position = 3)
-        private List<InvestDate> vaildDateList;
     }
 }

@@ -2,6 +2,7 @@ package com.stocking.modules.buythen;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stocking.infra.common.FirebaseUser;
+import com.stocking.infra.common.StockUtils.StockHighLow;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 
 import io.swagger.annotations.Api;
@@ -104,7 +106,7 @@ public class BuyThenController {
     
     @ApiOperation(value = "10년 내 최고가 ", 
         notes = "10년 내 최고가 - 삼성(005930),sk하이닉스(000660),카카오(035720),현대자동차(005380)", 
-        response = String.class)
+        response = HighPriceRes.class)
     @GetMapping("/high-price-10year")
     public ResponseEntity<Object> getHighPrice(
     ) throws IOException {
@@ -112,4 +114,17 @@ public class BuyThenController {
             buyThenService.getHighPrice()
         , HttpStatus.OK);
     }
+    
+    @ApiOperation(value = "장중 최고가/최저가 랜덤 4개 ", 
+        notes = "장중 최고가/최저가 랜덤 4개 ", 
+        response = StockHighLow.class)
+    @GetMapping("/high-row")
+    public ResponseEntity<Object> getHighlow(
+//        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable List<String> stockCodeList
+    ) throws IOException {
+        return new ResponseEntity<>(
+            buyThenService.getHighLow()
+        , HttpStatus.OK);
+    }
+    
 }
