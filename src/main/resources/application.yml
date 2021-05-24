@@ -20,6 +20,10 @@ logging:
   
 server:
   port: ${PORT:5000}
+  ssl:
+    key-store: classpath:keystore.p12
+    key-store-type: PKCS12    
+    key-store-password: stocking1234
 
 ---
 spring:
@@ -58,17 +62,21 @@ spring:
   profiles: production
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://13.124.97.47:5432/stocking 
+      jdbc-url: jdbc:postgresql://172.26.1.5:5432/stocking
       username: stocking
       password: stocking1234
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
       minimum-idle: 1
-      maximum-pool-size: 3
+      maximum-pool-size: 10
     
 logging:
   level[org.hibernate.type.descriptor.sql]: INFO
   
 server:
-  port: ${PORT:8080}
+  port: ${PORT:8443}
+  ssl:
+    key-store: /home/ubuntu/api/keystore.p12
+    key-store-type: PKCS12    
+    key-store-password: stocking1234
   

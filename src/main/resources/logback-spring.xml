@@ -19,7 +19,7 @@
     <springProfile name="production">
         <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
             <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                <fileNamePattern>/home/ec2-user/api/logs/stocking.%d{yyyy-MM-dd}.log</fileNamePattern>
+                <fileNamePattern>/home/ubuntu/api/logs/stocking.%d{yyyy-MM-dd}.log</fileNamePattern>
                 <!-- 7 일 지난 파일은 삭제한다.  -->
                 <maxHistory>7</maxHistory>
             </rollingPolicy>
