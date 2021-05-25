@@ -2,6 +2,7 @@ package com.stocking.modules.buyornot;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -123,6 +124,22 @@ public class BuyOrNotController {
         
         return new ResponseEntity<>(
             buyOrNotService.getStockChart(user, stockCode)
+        , HttpStatus.OK);
+    }
+    
+    @ApiOperation(
+        value = "종목별 차트 그래프 데이터 조회",
+        notes = "현재 시세, 등락률, 10년내 1주일 주기 historical data, 장점, 단점",
+        response = EvaluateBuySellRes.class
+    )
+    @GetMapping("/chartList/{stockCodeList}")
+    public ResponseEntity<Object> getStockChartList(
+        @ApiParam(value = "종목코드", defaultValue = "005930") @PathVariable List<String> stockCodeList,
+        @RequestAttribute FirebaseUser user
+    ) throws IOException, ParseException {
+        
+        return new ResponseEntity<>(
+            buyOrNotService.getStockChartList(user, stockCodeList)
         , HttpStatus.OK);
     }
 

@@ -3,6 +3,7 @@ package com.stocking.modules.buyornot;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -505,6 +506,22 @@ public class BuyOrNotService {
                     .build()
             )
             .build();
+    }
+    
+    /**
+     * 그래프 데이터 목록
+     * @param user
+     * @param stockCodeList
+     * @return
+     */
+    public List<StockChartRes> getStockChartList(FirebaseUser user, List<String> stockCodeList) {
+        List<StockChartRes> resultList = new ArrayList<>();
+        
+        for (String stockCode : stockCodeList) {
+            resultList.add(getStockChart(user, stockCode));
+        }
+        
+        return resultList;
     }
     
     /**
