@@ -23,6 +23,8 @@ public class CalculatedRes {
     
     @ApiModelProperty(notes = "계산 결과", required=false, position=5)
     private CalculatedValue calculatedValue;
+    @ApiModelProperty(notes = "예외 케이", required=false, position=6)
+    private ExceptionCase exceptionCase;
     
     @Data
     @AllArgsConstructor
@@ -47,5 +49,31 @@ public class CalculatedRes {
         @ApiModelProperty(notes = "월급", required=false, position=9)
         private BigDecimal salaryMonth;
     }
-    
+
+    @Data
+    @AllArgsConstructor
+    @Builder
+    public static class ExceptionCase {
+        @ApiModelProperty(notes = "예외 케이스 여부", required=false, position=1)
+        private Boolean isExceptionCase;
+
+        @ApiModelProperty(notes = "기간값 예외 케이스 여부", required=false, position=2)
+        private Boolean isDateException;
+        @ApiModelProperty(notes = "기존 투자 날짜", required=false, position=2)
+        private InvestDate oldInvestDate;
+        @ApiModelProperty(notes = "새 투자 날짜", required=false, position=2)
+        private InvestDate newInvestDate;
+
+        @ApiModelProperty(notes = "금액값 예외 케이스 여부", required=false, position=4)
+        private Boolean isPriceException;
+        @ApiModelProperty(notes = "기존 금액값", required=false, position=5)
+        private BigDecimal oldInvestPrice;
+        @ApiModelProperty(notes = "새 금액값", required=false, position=5)
+        private BigDecimal newInvestPrice;
+
+        @ApiModelProperty(notes = "종목 예외 케이스 여부", required=false, position=6)
+        private Boolean isStockException;
+        @ApiModelProperty(notes = "종목 예외 경고 메시지", required=false, position=7)
+        private String stockWarnMsg;
+    }
 }
