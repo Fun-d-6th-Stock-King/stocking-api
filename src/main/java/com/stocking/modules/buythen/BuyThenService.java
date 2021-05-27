@@ -179,7 +179,7 @@ public class BuyThenService {
         // 금액값 예외 확인
         BigDecimal newInvestPrice = investPrice;
         Boolean isPriceException = Boolean.FALSE;
-        if (oldStockPrice.get().compareTo(investPrice) < 0) {
+        if (oldStockPrice.get().compareTo(investPrice) > 0) {
             newInvestPrice = oldStockPrice.get();
             isExceptionCase = Boolean.TRUE;
             isPriceException = Boolean.TRUE;
@@ -249,7 +249,7 @@ public class BuyThenService {
             .lastTradingDateTime(lastTradeTime)
             .calculatedValue(
                 CalculatedValue.builder()
-                    .investPrice(investPrice)
+                    .investPrice(newInvestPrice)
                     .investDate(newInvestDate.getName())
                     .oldPrice(oldStockPrice.get())
                     .yieldPrice(yieldPrice)
