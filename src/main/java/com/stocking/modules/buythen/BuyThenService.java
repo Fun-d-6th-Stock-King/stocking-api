@@ -181,6 +181,7 @@ public class BuyThenService {
         Boolean isPriceException = Boolean.FALSE;
         if (oldStockPrice.get().compareTo(investPrice) < 0) {
             newInvestPrice = oldStockPrice.get();
+            isExceptionCase = Boolean.TRUE;
             isPriceException = Boolean.TRUE;
         }
 
