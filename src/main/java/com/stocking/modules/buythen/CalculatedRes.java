@@ -59,21 +59,21 @@ public class CalculatedRes {
 
         @ApiModelProperty(notes = "기간값 예외 케이스 여부", required=false, position=2)
         private Boolean isDateException;
-        @ApiModelProperty(notes = "기존 투자 날짜", required=false, position=2)
+        @ApiModelProperty(notes = "기존 투자 날짜", required=false, position=3)
         private InvestDate oldInvestDate;
-        @ApiModelProperty(notes = "새 투자 날짜", required=false, position=2)
+        @ApiModelProperty(notes = "새 투자 날짜", required=false, position=4)
         private InvestDate newInvestDate;
 
-        @ApiModelProperty(notes = "금액값 예외 케이스 여부", required=false, position=4)
+        @ApiModelProperty(notes = "금액값 예외 케이스 여부", required=false, position=5)
         private Boolean isPriceException;
-        @ApiModelProperty(notes = "기존 금액값", required=false, position=5)
+        @ApiModelProperty(notes = "기존 금액값", required=false, position=6)
         private BigDecimal oldInvestPrice;
-        @ApiModelProperty(notes = "새 금액값", required=false, position=5)
+        @ApiModelProperty(notes = "새 금액값", required=false, position=7)
         private BigDecimal newInvestPrice;
 
-        @ApiModelProperty(notes = "종목 예외 케이스 여부", required=false, position=6)
+        @ApiModelProperty(notes = "종목 예외 케이스 여부", required=false, position=8)
         private Boolean isStockException;
-        @ApiModelProperty(notes = "종목 예외 경고 메시지", required=false, position=7)
+        @ApiModelProperty(notes = "종목 예외 경고 메시지", required=false, position=9)
         private String stockWarnMsg;
     }
 }
