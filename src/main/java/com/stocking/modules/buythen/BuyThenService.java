@@ -138,7 +138,7 @@ public class BuyThenService {
         Boolean isDateExceptionCase = Boolean.FALSE;
 
         Optional<BigDecimal> oldStockPrice = Optional.empty();
-        for (int i=investDateIndex-1;i>=0;i--) {
+        for (int i=investDateIndex;i>=0;i--) {
             oldStockPrice = Optional.ofNullable( switch (newInvestDate) {
                 case DAY1 -> stockPrice.getPrice();
                 case WEEK1 -> stockPrice.getPriceW1();
@@ -149,7 +149,8 @@ public class BuyThenService {
                 case YEAR10 -> stockPrice.getPriceY10();
                 default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
             });
-
+            System.out.println("test");
+            System.out.println(oldStockPrice);
             if (oldStockPrice.isPresent()) {
                 break;
             }
