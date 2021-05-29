@@ -44,6 +44,7 @@ import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.infra.common.StockUtils.StockHighLow;
 import com.stocking.infra.common.StockUtils.StockHist;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
+import com.stocking.modules.buythen.CalcAllRes.CalculatedResult;
 import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
 import com.stocking.modules.buythen.CalculatedRes.ExceptionCase;
@@ -658,5 +659,73 @@ public class BuyThenService {
         codeList.forEach(code -> result.add(stockUtils.getStockHighLow(code)));
         
         return result ;
+    }
+    
+    /**
+     * 어제, 지난주,  
+     * @param buyThenForm
+     * @return
+     * @throws Exception
+     */
+    public CalcAllRes getPastAll(String code, BigDecimal investPrice) throws Exception {
+        StocksPrice stockPrice = stocksPriceRepository.findByCode(code)
+                .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+        
+        RealTimeStock realTimeStock = stockUtils.getStockInfo(code);
+
+        BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
+        String lastTradeTime = realTimeStock.getLastTradeTime();
+        
+        // 과거 주가
+        InvestDate newInvestDate = InvestDate.DAY1;
+
+        BigDecimal  oldStockPrice = switch (newInvestDate) {
+            case DAY1 -> stockPrice.getPrice();
+            case WEEK1 -> stockPrice.getPriceW1();
+            case MONTH1 -> stockPrice.getPriceM1();
+            case MONTH6 -> stockPrice.getPriceM6();
+            case YEAR1 -> stockPrice.getPriceY1();
+            case YEAR5 -> stockPrice.getPriceY5();
+            case YEAR10 -> stockPrice.getPriceY10();
+            default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
+        };
+        
+        // 종가일자
+        LocalDateTime oldCloseDate = switch (newInvestDate) {
+            case DAY1 -> stockPrice.getLastTradeDate();
+            case WEEK1 -> stockPrice.getDateW1();
+            case MONTH1 -> stockPrice.getDateM1();
+            case MONTH6 -> stockPrice.getDateM6();
+            case YEAR1 -> stockPrice.getDateY1();
+            case YEAR5 -> stockPrice.getDateY5();
+            case YEAR10 -> stockPrice.getDateY10();
+            default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
+        };
+
+        // 금액값 예외 확인
+        BigDecimal newInvestPrice = investPrice;
+
+        // 상승률 계산
+        BigDecimal holdingStock = newInvestPrice.divide(oldStockPrice, MathContext.DECIMAL32);     // 내가 산 주식 개수
+        BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice).divide(oldStockPrice, MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
+        BigDecimal yieldPrice = newInvestPrice.add(newInvestPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
+
+        return CalcAllRes.builder()
+            .code(code)
+            .company(stockPrice.getCompany())
+            .currentPrice(currentPrice)
+            .lastTradingDateTime(lastTradeTime)
+            .day1(
+                CalculatedResult.builder()
+                    .investPrice(newInvestPrice)
+                    .investDate(newInvestDate.getName())
+                    .oldPrice(oldStockPrice)
+                    .yieldPrice(yieldPrice)
+                    .yieldPercent(yieldPercent)
+                    .oldCloseDate(oldCloseDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")))
+                    .holdingStock(holdingStock)
+                    .build())
+            .build();
+        
     }
 }
