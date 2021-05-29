@@ -1,9 +1,11 @@
 package com.stocking.modules.buythen;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.stocking.infra.common.PageInfo;
+import com.stocking.infra.common.StockUtils;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -35,7 +37,7 @@ public class CalcHistRes {
         private String company;
         
     	@ApiModelProperty(notes = "투자시기", required=false, position=4)
-        private String investDate;
+        private LocalDateTime investDate;
     	
     	@ApiModelProperty(notes = "투자시기 한글명", required=false, position=4)
         private String investDateName;
@@ -53,7 +55,7 @@ public class CalcHistRes {
         private BigDecimal price;
         
         @ApiModelProperty(notes = "검색일시", required=false, position=9)
-        private String createdDate;
+        private LocalDateTime createdDate;
         
         @ApiModelProperty(notes = "작성자 id", required=false, position=10)
         private String createdUid;
@@ -63,6 +65,13 @@ public class CalcHistRes {
         
         @ApiModelProperty(notes = "종목코드", required=false, position=13)
         private String sectorKor;
+        
+        @ApiModelProperty(notes = "작성시간-text", position = 14)
+        private String createdDateText;
+        
+        public String getCreatedDateText() {
+            return StockUtils.beforeTime(this.createdDate);
+        }
     }
     
 }

@@ -1,5 +1,7 @@
 package com.stocking.modules.buythen;
 
+import static com.stocking.modules.buythen.InvestDate.DAY1;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -60,13 +62,11 @@ import com.stocking.modules.stock.StockRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
-import static com.stocking.modules.buythen.InvestDate.DAY1;
-
 @Service
 @Slf4j
 public class BuyThenService {
     
-	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
+//	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
 
     @Autowired
     private StockRepository stockRepository;
@@ -458,8 +458,8 @@ public class BuyThenService {
                     .code(vo.getCode())
                     .company(vo.getCompany())
                     .createdUid(vo.getCreatedUid())
-                    .createdDate(vo.getCreatedDate().format(DateTimeFormatter.ofPattern(FORMAT)))
-                    .investDate(vo.getInvestDate().format(DateTimeFormatter.ofPattern(FORMAT)))
+                    .createdDate(vo.getCreatedDate())
+                    .investDate(vo.getInvestDate())
                     .investDateName(vo.getInvestDateName())
                     .investPrice(vo.getInvestPrice())
                     .price(vo.getPrice())
