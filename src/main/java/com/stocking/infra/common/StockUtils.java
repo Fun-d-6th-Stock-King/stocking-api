@@ -50,10 +50,12 @@ public class StockUtils {
         Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
 
         Date now = new Date();
+        
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent())
+                .change(yahooStock.getQuote().getChange())
                 .yearHigh(yahooStock.getQuote().getYearHigh())
                 .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
                 .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
@@ -86,6 +88,7 @@ public class StockUtils {
         private BigDecimal currentPrice; // 현재 주가
         private String lastTradeTime;    // 최근 거래 일시
         private BigDecimal changeInPercent;
+        private BigDecimal change;
         private String currentTime;      // 현재가를 업데이트한 시간
         
         private BigDecimal yearHigh;    // 연중 최고가
