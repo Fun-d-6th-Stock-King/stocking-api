@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,6 +44,7 @@ import com.stocking.infra.common.StockUtils.StockHist;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
+import com.stocking.modules.buythen.CalculatedRes.ExceptionCase;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.IndustryValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
@@ -57,6 +59,8 @@ import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
 import lombok.extern.slf4j.Slf4j;
+
+import static com.stocking.modules.buythen.InvestDate.DAY1;
 
 @Service
 @Slf4j
@@ -121,24 +125,46 @@ public class BuyThenService {
         StocksPrice stockPrice = stocksPriceRepository.findByStocksId(stock.getId())
                 .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
         
-        String code = stock.getCode();
-        InvestDate investDate = buyThenForm.getInvestDate();
-        BigDecimal investPrice = buyThenForm.getInvestPrice();    // 투자금
+        String code = stock.getCode();                          // 종목 코드
+        InvestDate investDate = buyThenForm.getInvestDate();    // 투자 날짜
+        BigDecimal investPrice = buyThenForm.getInvestPrice();  // 투자금
+
+        Boolean isExceptionCase = Boolean.FALSE;                // 예외 케이스 여부
 
         // 과거 주가
-        BigDecimal oldStockPrice = Optional.ofNullable( switch (investDate) {
-            case DAY1 -> stockPrice.getPrice();
-            case WEEK1 -> stockPrice.getPriceW1();
-            case MONTH1 -> stockPrice.getPriceM1();
-            case MONTH6 -> stockPrice.getPriceM6();
-            case YEAR1 -> stockPrice.getPriceY1();
-            case YEAR5 -> stockPrice.getPriceY5();
-            case YEAR10 -> stockPrice.getPriceY10();
-            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
-        }).orElseThrow(() -> new Exception(stock.getCompany() + " 는(은) " + investDate.getName() + " 데이터가 없습니다."));
+        List<InvestDate> investDates = new ArrayList<InvestDate>(EnumSet.allOf(InvestDate.class));
+        int investDateIndex = investDates.indexOf(investDate);
+        InvestDate newInvestDate = investDate;
+        Boolean isDateExceptionCase = Boolean.FALSE;
+
+        Optional<BigDecimal> oldStockPrice = Optional.empty();
+        for (int i=investDateIndex-1;i>=0;i--) {
+            oldStockPrice = Optional.ofNullable( switch (newInvestDate) {
+                case DAY1 -> stockPrice.getPrice();
+                case WEEK1 -> stockPrice.getPriceW1();
+                case MONTH1 -> stockPrice.getPriceM1();
+                case MONTH6 -> stockPrice.getPriceM6();
+                case YEAR1 -> stockPrice.getPriceY1();
+                case YEAR5 -> stockPrice.getPriceY5();
+                case YEAR10 -> stockPrice.getPriceY10();
+                default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
+            });
+
+            if (oldStockPrice.isPresent()) {
+                break;
+            }
+            newInvestDate = investDates.get(i);
+            isDateExceptionCase = Boolean.TRUE;
+            isExceptionCase = Boolean.TRUE;
+        }
+        if (!oldStockPrice.isPresent()) {
+            throw new Exception(
+                    stock.getCompany() + " 의 주식 데이터가 존재하지 않습니다."
+            );
+        }
         
         // 종가일자
-        LocalDateTime oldCloseDate = switch (investDate) {    
+        LocalDateTime oldCloseDate = switch (newInvestDate) {
             case DAY1 -> stockPrice.getLastTradeDate();
             case WEEK1 -> stockPrice.getDateW1();
             case MONTH1 -> stockPrice.getDateM1();
@@ -149,19 +175,32 @@ public class BuyThenService {
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
 
+
+        // 금액값 예외 확인
+        BigDecimal newInvestPrice = investPrice;
+        Boolean isPriceException = Boolean.FALSE;
+        if (oldStockPrice.get().compareTo(investPrice) > 0) {
+            newInvestPrice = oldStockPrice.get();
+            isExceptionCase = Boolean.TRUE;
+            isPriceException = Boolean.TRUE;
+        }
+
+        // 상승률 계산
         RealTimeStock realTimeStock = stockUtils.getStockInfo(code);
-        
+
         BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
         String lastTradeTime = realTimeStock.getLastTradeTime();
-        
-        BigDecimal holdingStock = investPrice.divide(oldStockPrice, MathContext.DECIMAL32);     // 내가 산 주식 개수 
-        BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice).divide(oldStockPrice, MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
-        BigDecimal yieldPrice = investPrice.add(investPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
 
+        BigDecimal holdingStock = newInvestPrice.divide(oldStockPrice.get(), MathContext.DECIMAL32);     // 내가 산 주식 개수
+        BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice.get()).divide(oldStockPrice.get(), MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
+        BigDecimal yieldPrice = newInvestPrice.add(newInvestPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
+
+
+        // 연봉, 월급 계산
         BigDecimal salaryYear = null;      // 연봉
         BigDecimal salaryMonth = null;     // 월급
         
-        switch (investDate) {
+        switch (newInvestDate) {
             case DAY1, WEEK1, MONTH1 :
                 salaryYear = yieldPrice;
                 salaryMonth = yieldPrice;
@@ -184,6 +223,7 @@ public class BuyThenService {
                 break;
             default : throw new IllegalArgumentException("Unexpected value: " + investDate);
         }
+
         
         // 계산이력 저장
         calcHistRepository.save(
@@ -192,8 +232,8 @@ public class BuyThenService {
     			.company(stockPrice.getCompany())
     			.createdUid(user.getUid())
     			.investDate(oldCloseDate)
-    			.investDateName(investDate.getName())
-    			.investPrice(investPrice)
+    			.investDateName(newInvestDate.getName())
+    			.investPrice(newInvestPrice)
     			.yieldPrice(yieldPrice)
     			.yieldPercent(yieldPercent)
     			.price(currentPrice)
@@ -209,17 +249,27 @@ public class BuyThenService {
             .lastTradingDateTime(lastTradeTime)
             .calculatedValue(
                 CalculatedValue.builder()
-                    .investPrice(investPrice)
-                    .investDate(investDate.getName())
-                    .oldPrice(oldStockPrice)
+                    .investPrice(newInvestPrice)
+                    .investDate(newInvestDate.getName())
+                    .oldPrice(oldStockPrice.get())
                     .yieldPrice(yieldPrice)
                     .yieldPercent(yieldPercent)
                     .oldCloseDate(oldCloseDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")))
                     .holdingStock(holdingStock)
                     .salaryYear(salaryYear)
                     .salaryMonth(salaryMonth)
-                    .build()
-            ).build();
+                    .build())
+            .exceptionCase(
+                ExceptionCase.builder()
+                    .isExceptionCase(isExceptionCase)
+                    .isDateException(isDateExceptionCase)
+                    .oldInvestDate(investDate)
+                    .newInvestDate(newInvestDate)
+                    .isPriceException(isPriceException)
+                    .oldInvestPrice(investPrice)
+                    .newInvestPrice(newInvestPrice)
+                    .build())
+            .build();
         
     }
 
@@ -439,7 +489,7 @@ public class BuyThenService {
      * @return
      */
     public YieldSortRes getYieldSortList(InvestDate investDate, BuySell buySell, int pageSize, int pageNo) {
-        if(InvestDate.DAY1 == investDate) { 
+        if(DAY1 == investDate) {
             // 1일 전 수익률은 계속 바뀌는 현재가랑 재계산을 종목 갯수만큼 해야해서 보류...? 
             return YieldSortRes.builder().build();
         }
