@@ -676,10 +676,32 @@ public class BuyThenService {
         BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
         String lastTradeTime = realTimeStock.getLastTradeTime();
         
-        // 과거 주가
-        InvestDate newInvestDate = InvestDate.DAY1;
-
-        BigDecimal  oldStockPrice = switch (newInvestDate) {
+        return CalcAllRes.builder()
+            .code(code)
+            .company(stockPrice.getCompany())
+            .currentPrice(currentPrice)
+            .lastTradingDateTime(lastTradeTime)
+            .day1(getCalcResult(stockPrice, realTimeStock, investPrice, InvestDate.DAY1))
+            .week1(getCalcResult(stockPrice, realTimeStock, investPrice, InvestDate.WEEK1))
+            .month1(getCalcResult(stockPrice, realTimeStock, investPrice, InvestDate.MONTH1))
+            .month6(getCalcResult(stockPrice, realTimeStock, investPrice, InvestDate.MONTH6))
+            .year1(getCalcResult(stockPrice, realTimeStock, investPrice, InvestDate.YEAR1))
+            .year10(getCalcResult(stockPrice, realTimeStock, investPrice, InvestDate.YEAR10))
+            .build();
+    }
+    
+    /**
+     * 계산결과 가져오기
+     * @param stockPrice - 디비 정보
+     * @param realTimeStock - 현재주가
+     * @param investPrice - 투자금
+     * @param investDate - 투자시기
+     * @return
+     */
+    private CalculatedResult getCalcResult(StocksPrice stockPrice, RealTimeStock realTimeStock, BigDecimal investPrice, InvestDate investDate) {
+        BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
+        
+        BigDecimal oldStockPrice = switch (investDate) {
             case DAY1 -> stockPrice.getPrice();
             case WEEK1 -> stockPrice.getPriceW1();
             case MONTH1 -> stockPrice.getPriceM1();
@@ -687,11 +709,13 @@ public class BuyThenService {
             case YEAR1 -> stockPrice.getPriceY1();
             case YEAR5 -> stockPrice.getPriceY5();
             case YEAR10 -> stockPrice.getPriceY10();
-            default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
         
+        if(oldStockPrice == null) return null;  // 
+        
         // 종가일자
-        LocalDateTime oldCloseDate = switch (newInvestDate) {
+        LocalDateTime oldCloseDate = switch (investDate) {
             case DAY1 -> stockPrice.getLastTradeDate();
             case WEEK1 -> stockPrice.getDateW1();
             case MONTH1 -> stockPrice.getDateM1();
@@ -699,33 +723,23 @@ public class BuyThenService {
             case YEAR1 -> stockPrice.getDateY1();
             case YEAR5 -> stockPrice.getDateY5();
             case YEAR10 -> stockPrice.getDateY10();
-            default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
 
-        // 금액값 예외 확인
-        BigDecimal newInvestPrice = investPrice;
-
         // 상승률 계산
-        BigDecimal holdingStock = newInvestPrice.divide(oldStockPrice, MathContext.DECIMAL32);     // 내가 산 주식 개수
+        BigDecimal holdingStock = investPrice.divide(oldStockPrice, MathContext.DECIMAL32);     // 내가 산 주식 개수
         BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice).divide(oldStockPrice, MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
-        BigDecimal yieldPrice = newInvestPrice.add(newInvestPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
+        BigDecimal yieldPrice = investPrice.add(investPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
 
-        return CalcAllRes.builder()
-            .code(code)
-            .company(stockPrice.getCompany())
-            .currentPrice(currentPrice)
-            .lastTradingDateTime(lastTradeTime)
-            .day1(
-                CalculatedResult.builder()
-                    .investPrice(newInvestPrice)
-                    .investDate(newInvestDate.getName())
-                    .oldPrice(oldStockPrice)
-                    .yieldPrice(yieldPrice)
-                    .yieldPercent(yieldPercent)
-                    .oldCloseDate(oldCloseDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")))
-                    .holdingStock(holdingStock)
-                    .build())
-            .build();
         
+        return CalculatedResult.builder()
+                .investPrice(investPrice)
+                .investDate(investDate.getName())
+                .oldPrice(oldStockPrice)
+                .yieldPrice(yieldPrice)
+                .yieldPercent(yieldPercent)
+                .oldCloseDate(oldCloseDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")))
+                .holdingStock(holdingStock)
+                .build();
     }
 }

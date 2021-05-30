@@ -25,9 +25,13 @@ public class CalcAllRes {
     private CalculatedResult day1;
     @ApiModelProperty(notes = "계산 결과(1주일전)", required=false, position=6)
     private CalculatedResult week1;
-    @ApiModelProperty(notes = "계산 결과(작년)", required=false, position=7)
+    @ApiModelProperty(notes = "계산 결과(1개월전)", required=false, position=7)
+    private CalculatedResult month1;
+    @ApiModelProperty(notes = "계산 결과(6개월전)", required=false, position=8)
+    private CalculatedResult month6;
+    @ApiModelProperty(notes = "계산 결과(작년)", required=false, position=9)
     private CalculatedResult year1;
-    @ApiModelProperty(notes = "계산 결과(10년)", required=false, position=8)
+    @ApiModelProperty(notes = "계산 결과(10년)", required=false, position=10)
     private CalculatedResult year10;
     
     @Data
