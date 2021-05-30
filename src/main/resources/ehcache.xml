@@ -71,6 +71,37 @@
             <heap unit="entries">1000</heap>
         </resources>
     </cache-template>
+    
+    <cache-template name="template3">
+        <!-- 캐시 만료기간 설정 -->
+        <expiry>
+            <!-- unit : nanos, micros, millis, seconds, minutes, hours, days -->
+            <ttl unit="days">1</ttl>
+        </expiry>
+
+        <!--
+        캐시가 생성되고 삭제되고 하는 이벤트를 모니터링 하고 싶으면
+        org.ehcache.event.CacheEventListener 를 구현하는 클래스를 만들어서 요렇게 설정해 주면됨
+        태그 순서가 중요해서 아무데나 listeners 태그를 추가하면 오류남
+        -->
+        <listeners>
+            <listener>
+                <class>com.stocking.infra.config.CacheEventLogger</class>
+                <event-firing-mode>ASYNCHRONOUS</event-firing-mode>
+                <event-ordering-mode>UNORDERED</event-ordering-mode>
+                <events-to-fire-on>CREATED</events-to-fire-on>
+                <events-to-fire-on>EVICTED</events-to-fire-on>
+                <events-to-fire-on>REMOVED</events-to-fire-on>
+                <events-to-fire-on>UPDATED</events-to-fire-on>
+                <events-to-fire-on>EXPIRED</events-to-fire-on>
+            </listener>
+        </listeners>
+        
+        <resources>
+            <!-- 캐시에 최대 몇개 까지 유지할지 -->
+            <heap unit="entries">8000</heap>
+        </resources>
+    </cache-template>
 
     <!--
         alias 는 @Cacheable(value = "codes", key="#codeGrp") 여기에서 썻던 value 값으로
@@ -79,4 +110,5 @@
     <cache alias="stockHistCache" uses-template="template2"></cache>
     <cache alias="stockList" uses-template="template2"></cache>
 	<cache alias="stockHighLow" uses-template="template"></cache>
+	<cache alias="stockHighestCache" uses-template="template3"></cache>
 </config>

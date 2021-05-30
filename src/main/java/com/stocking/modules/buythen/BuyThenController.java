@@ -129,10 +129,18 @@ public class BuyThenController {
     
     @ApiOperation(value = "에제,일주이전,1년전,10년전 계산", notes = "결과페이지에서 사용", response = CalcAllRes.class)
     @GetMapping("/calc-all-date")
-    public ResponseEntity<Object> getPastAll(
+    public ResponseEntity<Object> getAllDateResult(
         @ApiParam(value = "종목코드", defaultValue = "010140", required = true) @RequestParam String code,
         @ApiParam(value = "투자금", defaultValue = "100000", required = true) @RequestParam BigDecimal investPrice
     ) throws Exception {
-        return new ResponseEntity<>(buyThenService.getPastAll(code, investPrice), HttpStatus.OK);
+        return new ResponseEntity<>(buyThenService.getAllDateResult(code, investPrice), HttpStatus.OK);
+    }
+    
+    @ApiOperation(value = "기간내 최고점에 팔았을때 수익금 계산", notes = "결과페이지에서 사용", response = String.class)
+    @GetMapping("/calc-highest")
+    public ResponseEntity<Object> getHighestPrice(
+        @ModelAttribute BuyThenForm buyThenForm
+    ) throws Exception {
+        return new ResponseEntity<>(buyThenService.getHighestPrice(buyThenForm), HttpStatus.OK);
     }
 }

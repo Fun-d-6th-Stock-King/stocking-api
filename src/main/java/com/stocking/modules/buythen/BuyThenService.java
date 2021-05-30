@@ -10,6 +10,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -42,6 +43,7 @@ import com.stocking.infra.common.PageInfo;
 import com.stocking.infra.common.StockUtils;
 import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.infra.common.StockUtils.StockHighLow;
+import com.stocking.infra.common.StockUtils.StockHighest;
 import com.stocking.infra.common.StockUtils.StockHist;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buythen.CalcAllRes.CalculatedResult;
@@ -667,7 +669,7 @@ public class BuyThenService {
      * @return
      * @throws Exception
      */
-    public CalcAllRes getPastAll(String code, BigDecimal investPrice) throws Exception {
+    public CalcAllRes getAllDateResult(String code, BigDecimal investPrice) throws Exception {
         StocksPrice stockPrice = stocksPriceRepository.findByCode(code)
                 .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
         
@@ -731,7 +733,6 @@ public class BuyThenService {
         BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice).divide(oldStockPrice, MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
         BigDecimal yieldPrice = investPrice.add(investPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
 
-        
         return CalculatedResult.builder()
                 .investPrice(investPrice)
                 .investDate(investDate.getName())
@@ -741,5 +742,90 @@ public class BuyThenService {
                 .oldCloseDate(oldCloseDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")))
                 .holdingStock(holdingStock)
                 .build();
+    }
+    
+    public CalcHighestRes getHighestPrice(BuyThenForm buyThenForm) throws Exception {
+        InvestDate investDate = buyThenForm.getInvestDate();
+        BigDecimal investPrice = buyThenForm.getInvestPrice();
+        
+        StocksPrice stockPrice = stocksPriceRepository.findByCode(buyThenForm.getCode())
+            .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+        
+        BigDecimal oldStockPrice = switch (investDate) {
+            case DAY1 -> stockPrice.getPrice();
+            case WEEK1 -> stockPrice.getPriceW1();
+            case MONTH1 -> stockPrice.getPriceM1();
+            case MONTH6 -> stockPrice.getPriceM6();
+            case YEAR1 -> stockPrice.getPriceY1();
+            case YEAR5 -> stockPrice.getPriceY5();
+            case YEAR10 -> stockPrice.getPriceY10();
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+        };
+        
+        // 해당 기간에 가격이 없는 경우
+        if(oldStockPrice == null) {
+            investDate = getExistDate(stockPrice);
+            
+            oldStockPrice = switch (investDate) {
+                case DAY1 -> stockPrice.getPrice();
+                case WEEK1 -> stockPrice.getPriceW1();
+                case MONTH1 -> stockPrice.getPriceM1();
+                case MONTH6 -> stockPrice.getPriceM6();
+                case YEAR1 -> stockPrice.getPriceY1();
+                case YEAR5 -> stockPrice.getPriceY5();
+                case YEAR10 -> stockPrice.getPriceY10();
+                default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+            };
+        }
+        
+        LocalDateTime oldCloseDate = switch (investDate) {
+            case DAY1 -> stockPrice.getLastTradeDate();
+            case WEEK1 -> stockPrice.getDateW1();
+            case MONTH1 -> stockPrice.getDateM1();
+            case MONTH6 -> stockPrice.getDateM6();
+            case YEAR1 -> stockPrice.getDateY1();
+            case YEAR5 -> stockPrice.getDateY5();
+            case YEAR10 -> stockPrice.getDateY10();
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+        };
+
+        // 기간내 최고가 계산
+        StockHighest stockHighest = stockUtils.getStockHighest(buyThenForm.getCode(), investDate);
+        
+        // 상승률 계산
+        BigDecimal yieldPercent = stockHighest.getMaxQuote().getHigh().subtract(oldStockPrice).divide(oldStockPrice, MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
+        BigDecimal yieldPrice = investPrice.add(investPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
+        
+        // 기간 계산
+        LocalDateTime endDateTime = StockUtils.getLocalDateTime(stockHighest.getMaxQuote().getDate());
+        long diff = ChronoUnit.DAYS.between(oldCloseDate, endDateTime);
+        long week = diff / 7L; 
+        String period = String.format("%d주(%d일)", week, diff);
+        
+        return CalcHighestRes.builder()
+            .code(buyThenForm.getCode())
+            .investPrice(buyThenForm.getInvestPrice())
+            .investDate(investDate.getName())
+            .investStartDate(oldCloseDate)
+            .investEndDate(endDateTime)
+            .yieldPercent(yieldPercent)
+            .yieldPrice(yieldPrice)
+            .investPeriod(period)
+            .build();
+    }
+    
+    /**
+     * 가격이 존재하는 기간 찾기
+     * @param stockPrice
+     * @return
+     */
+    private InvestDate getExistDate(StocksPrice stockPrice) {
+        if(stockPrice.getPriceY10() != null) return InvestDate.YEAR10;
+        if(stockPrice.getPriceY5() != null) return InvestDate.YEAR5;
+        if(stockPrice.getPriceY1() != null) return InvestDate.YEAR1;
+        if(stockPrice.getPriceM6() != null) return InvestDate.MONTH1;
+        if(stockPrice.getPriceM1() != null) return InvestDate.MONTH6;
+        if(stockPrice.getPriceW1() != null) return InvestDate.WEEK1;
+        return InvestDate.DAY1;
     }
 }
