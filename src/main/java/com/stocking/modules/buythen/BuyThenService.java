@@ -561,7 +561,7 @@ public class BuyThenService {
         .fetch();
         
         long count = queryFactory.selectFrom(qStocksPrice)
-            .where(oldDate.isNotNull())
+            .where(oldDate.isNotNull().and(qStocksPrice.tradingHalt.eq(false)))
             .fetchCount();
         
         return YieldSortRes.builder()
