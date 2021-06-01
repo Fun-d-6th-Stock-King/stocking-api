@@ -554,7 +554,7 @@ public class BuyThenService {
                 qStocksPrice.price.as("price")
             )
         ).from(qStocksPrice)
-        .where(oldDate.isNotNull())
+        .where(oldDate.isNotNull().and(qStocksPrice.tradingHalt.eq(false)))
         .orderBy(order)
         .offset((pageNo - 1) * pageSize)
         .limit(pageSize)
@@ -744,12 +744,22 @@ public class BuyThenService {
                 .build();
     }
     
+    /**
+     * 기간내 최고가에 매도시 수익금 계산
+     * @param buyThenForm
+     * @return
+     * @throws Exception
+     */
     public CalcHighestRes getHighestPrice(BuyThenForm buyThenForm) throws Exception {
         InvestDate investDate = buyThenForm.getInvestDate();
         BigDecimal investPrice = buyThenForm.getInvestPrice();
         
         StocksPrice stockPrice = stocksPriceRepository.findByCode(buyThenForm.getCode())
             .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+        
+        if(investDate != getExistMaxDate(stockPrice)) {
+            investDate = getExistMaxDate(stockPrice);
+        }
         
         BigDecimal oldStockPrice = switch (investDate) {
             case DAY1 -> stockPrice.getPrice();
@@ -761,22 +771,6 @@ public class BuyThenService {
             case YEAR10 -> stockPrice.getPriceY10();
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
-        
-        // 해당 기간에 가격이 없는 경우
-        if(oldStockPrice == null) {
-            investDate = getExistDate(stockPrice);
-            
-            oldStockPrice = switch (investDate) {
-                case DAY1 -> stockPrice.getPrice();
-                case WEEK1 -> stockPrice.getPriceW1();
-                case MONTH1 -> stockPrice.getPriceM1();
-                case MONTH6 -> stockPrice.getPriceM6();
-                case YEAR1 -> stockPrice.getPriceY1();
-                case YEAR5 -> stockPrice.getPriceY5();
-                case YEAR10 -> stockPrice.getPriceY10();
-                default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
-            };
-        }
         
         LocalDateTime oldCloseDate = switch (investDate) {
             case DAY1 -> stockPrice.getLastTradeDate();
@@ -819,7 +813,7 @@ public class BuyThenService {
      * @param stockPrice
      * @return
      */
-    private InvestDate getExistDate(StocksPrice stockPrice) {
+    private InvestDate getExistMaxDate(StocksPrice stockPrice) {
         if(stockPrice.getPriceY10() != null) return InvestDate.YEAR10;
         if(stockPrice.getPriceY5() != null) return InvestDate.YEAR5;
         if(stockPrice.getPriceY1() != null) return InvestDate.YEAR1;

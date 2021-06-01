@@ -151,6 +151,15 @@ public class StocksPrice implements Serializable {
     @Column(name = "stop_trading")
     private Boolean stopTrading;
     
+    @Column(name = "trading_halt")
+    private Boolean tradingHalt;
+    
+    @Column(name = "investment_alert")
+    private Boolean investmentAlert;
+    
+    @Column(name = "management")
+    private Boolean management;
+    
     @LastModifiedDate
     @Column(name = "updated_date")
     private LocalDateTime updatedDate;
