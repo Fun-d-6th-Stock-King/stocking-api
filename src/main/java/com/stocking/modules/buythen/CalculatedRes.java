@@ -24,7 +24,7 @@ public class CalculatedRes {
     @ApiModelProperty(notes = "계산 결과", required=false, position=5)
     private CalculatedValue calculatedValue;
     @ApiModelProperty(notes = "예외 케이스", required=false, position=6)
-    private ExceptionCase exceptionCase;
+    private ExceptCase exceptCase;
     
     @Data
     @AllArgsConstructor
@@ -53,7 +53,7 @@ public class CalculatedRes {
     @Data
     @AllArgsConstructor
     @Builder
-    public static class ExceptionCase {
+    public static class ExceptCase {
         @ApiModelProperty(notes = "예외 케이스 여부", required=false, position=1)
         private Boolean isExceptCase;
 

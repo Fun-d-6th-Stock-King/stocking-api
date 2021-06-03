@@ -49,7 +49,7 @@ import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buythen.CalcAllRes.CalculatedResult;
 import com.stocking.modules.buythen.CalcHistRes.CalculationHist;
 import com.stocking.modules.buythen.CalculatedRes.CalculatedValue;
-import com.stocking.modules.buythen.CalculatedRes.ExceptionCase;
+import com.stocking.modules.buythen.CalculatedRes.ExceptCase;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.CurrentValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.IndustryValue;
 import com.stocking.modules.buythen.CurrentKospiIndustryRes.KospiValue;
@@ -132,13 +132,13 @@ public class BuyThenService {
         InvestDate investDate = buyThenForm.getInvestDate();    // 투자 날짜
         BigDecimal investPrice = buyThenForm.getInvestPrice();  // 투자금
 
-        Boolean isExceptionCase = Boolean.FALSE;                // 예외 케이스 여부
+        Boolean isExceptCase = Boolean.FALSE;                // 예외 케이스 여부
 
         // 과거 주가
         List<InvestDate> investDates = new ArrayList<InvestDate>(EnumSet.allOf(InvestDate.class));
         int investDateIndex = investDates.indexOf(investDate);
         InvestDate newInvestDate = investDate;
-        Boolean isDateExceptionCase = Boolean.FALSE;
+        Boolean isDateExceptCase = Boolean.FALSE;
 
         Optional<BigDecimal> oldStockPrice = Optional.empty();
         for (int i=investDateIndex;i>=0;i--) {
@@ -152,14 +152,12 @@ public class BuyThenService {
                 case YEAR10 -> stockPrice.getPriceY10();
                 default -> throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
             });
-            System.out.println("test");
-            System.out.println(oldStockPrice);
             if (oldStockPrice.isPresent()) {
                 break;
             }
             newInvestDate = investDates.get(i);
-            isDateExceptionCase = Boolean.TRUE;
-            isExceptionCase = Boolean.TRUE;
+            isDateExceptCase = Boolean.TRUE;
+            isExceptCase = Boolean.TRUE;
         }
         if (!oldStockPrice.isPresent()) {
             throw new Exception(
@@ -182,13 +180,12 @@ public class BuyThenService {
 
         // 금액값 예외 확인
         BigDecimal newInvestPrice = investPrice;
-        Boolean isPriceException = Boolean.FALSE;
+        Boolean isPriceExcept = Boolean.FALSE;
         if (oldStockPrice.get().compareTo(investPrice) > 0) {
             newInvestPrice = oldStockPrice.get();
-            isExceptionCase = Boolean.TRUE;
-            isPriceException = Boolean.TRUE;
+            isExceptCase = Boolean.TRUE;
+            isPriceExcept = Boolean.TRUE;
         }
-
         // 상승률 계산
         RealTimeStock realTimeStock = stockUtils.getStockInfo(code);
 
@@ -263,13 +260,13 @@ public class BuyThenService {
                     .salaryYear(salaryYear)
                     .salaryMonth(salaryMonth)
                     .build())
-            .exceptionCase(
-                ExceptionCase.builder()
-                    .isExceptionCase(isExceptionCase)
-                    .isDateException(isDateExceptionCase)
+            .exceptCase(
+                ExceptCase.builder()
+                    .isExceptCase(isExceptCase)
+                    .isDateExcept(isDateExceptCase)
                     .oldInvestDate(investDate)
                     .newInvestDate(newInvestDate)
-                    .isPriceException(isPriceException)
+                    .isPriceExcept(isPriceExcept)
                     .oldInvestPrice(investPrice)
                     .newInvestPrice(newInvestPrice)
                     .build())
