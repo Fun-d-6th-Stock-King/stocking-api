@@ -138,7 +138,7 @@ public class BuyThenService {
         Boolean isTradingHalt = stockPrice.getTradingHalt();
         Boolean isInvestmentAlert = stockPrice.getInvestmentAlert();
         Boolean isManagement = stockPrice.getManagement();
-        Boolean isStockExcept = isTradingHalt | isInvestmentAlert | isManagement;
+        Boolean isStockExcept = isTradingHalt || isInvestmentAlert || isManagement;
         isExceptCase = isStockExcept;
 
         // 과거 주가
