@@ -66,24 +66,20 @@ public class TodayWordService {
      * @param todayWordId
      * @return
      */
-    public Map<String, Object> saveTodayWordLike(FirebaseUser user, Long todayWordId) {
-        Map<String, Object> resultMap = new HashMap<>();
+    public TodayWordRes saveTodayWordLike(FirebaseUser user, Long todayWordId) {
         
         todayWordLikeRepository.findByTodayWordIdAndCreatedUid(todayWordId, user.getUid())
-            .ifPresentOrElse(vo -> {
-                todayWordLikeRepository.delete(vo);
-                resultMap.put("result", "unlike");
-            }, () -> {
+            .ifPresentOrElse(vo -> 
+                todayWordLikeRepository.delete(vo)
+            , () -> 
                 todayWordLikeRepository.save(
                     TodayWordLike.builder()
                         .todayWordId(todayWordId)
                         .createdUid(user.getUid())
                         .build()
-                );
-                resultMap.put("result", "like");
-            });
+                ));
         
-        return resultMap;
+        return this.getTodayWord(user, todayWordId);
     }
 
     /**

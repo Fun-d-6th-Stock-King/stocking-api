@@ -1,5 +1,6 @@
 package com.stocking.modules.buyornot;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,6 +28,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.infra.common.FirebaseUser;
 import com.stocking.infra.common.PageInfo;
 import com.stocking.infra.common.StockUtils;
+import com.stocking.infra.common.StockUtils.RealTimeStock;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySell.BuySell;
 import com.stocking.modules.buyornot.repo.EvaluateBuySellRepository;
@@ -51,9 +53,11 @@ import com.stocking.modules.buythen.repo.QStocksPrice;
 import com.stocking.modules.firebase.QFireUser;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BuyOrNotService {
 
     private final EvaluateBuySellRepository evaluateBuySellRepository;
@@ -629,8 +633,19 @@ public class BuyOrNotService {
                 .from(qEvaluateBuySell)
                 .groupBy(qEvaluateBuySell.code)
                 .orderBy(orderSpecifierList)
-                .limit(rankListType.getMax())
+                .limit(rankListType.getLimit())
                 .fetch();
+        
+        groupResultList.forEach(vo -> {
+            try {
+                RealTimeStock realTimeStock = stockUtils.getStockInfo(vo.getCode());
+                vo.setCurrentPrice(realTimeStock.getCurrentPrice());
+                vo.setChange(realTimeStock.getChange());
+                vo.setChangeInPercent(realTimeStock.getChangeInPercent());
+            } catch (IOException e) {
+                log.error("stockUtils.getStockInfo 에러 발생", e);;
+            }
+        });
         
         NumberPath<Long> aliasLikeCount = Expressions.numberPath(Long.class, LIKECOUNT);
         
@@ -674,6 +689,8 @@ public class BuyOrNotService {
                 RankTop.builder()
                     .pros(simpleEvaluation.getPros())
                     .cons(simpleEvaluation.getCons())
+                    .createdDate(simpleEvaluation.getCreatedDate())
+                    .displayName(simpleEvaluation.getDisplayName())
                     .build()
             ).build();
     }

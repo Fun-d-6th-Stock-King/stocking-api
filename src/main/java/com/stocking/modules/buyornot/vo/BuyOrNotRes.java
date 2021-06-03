@@ -1,7 +1,6 @@
 package com.stocking.modules.buyornot.vo;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import com.stocking.infra.common.PageInfo;
@@ -30,7 +29,7 @@ public class BuyOrNotRes {
     @Builder
     public static class SimpleEvaluation {
         
-        private static final String FORMAT = "yyyy-MM-dd HH:mm:ss";
+//        private static final String FORMAT = "yyyy-MM-dd HH:mm:ss";
         
         private long id;
         private String code;        // 종목코드
@@ -43,9 +42,9 @@ public class BuyOrNotRes {
         private LocalDateTime createdDate;       // 작성일시
         private String displayName; // 등록자 이름
         
-        public String getCreatedDate() {
-            return this.createdDate.format(DateTimeFormatter.ofPattern(FORMAT));
-        }
+//        public String getCreatedDate() {
+//            return this.createdDate.format(DateTimeFormatter.ofPattern(FORMAT));
+//        }
     }
 
 }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 public interface StocksPriceRepository extends JpaRepository<StocksPrice, Long> {
 
     public Optional<StocksPrice> findByStocksId(long stocksId);
+    public Optional<StocksPrice> findByCode(String code);
     public List<StocksPrice> findBySectorYahoo(String sectorYahoo);
     
     public List<StocksPrice> findByCodeInOrderByMarketCapDesc(String... code);

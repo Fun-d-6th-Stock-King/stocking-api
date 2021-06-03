@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
+import com.stocking.modules.buythen.InvestDate;
 import com.stocking.modules.stock.StockRepository;
 
 import lombok.AllArgsConstructor;
@@ -50,10 +51,12 @@ public class StockUtils {
         Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
 
         Date now = new Date();
+        
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent())
+                .change(yahooStock.getQuote().getChange())
                 .yearHigh(yahooStock.getQuote().getYearHigh())
                 .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
                 .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
@@ -86,6 +89,7 @@ public class StockUtils {
         private BigDecimal currentPrice; // 현재 주가
         private String lastTradeTime;    // 최근 거래 일시
         private BigDecimal changeInPercent;
+        private BigDecimal change;
         private String currentTime;      // 현재가를 업데이트한 시간
         
         private BigDecimal yearHigh;    // 연중 최고가
@@ -222,15 +226,20 @@ public class StockUtils {
         private List<HistoricalQuote> quoteList;
     }
     
+    public static String beforeTime(LocalDateTime startDateTime) {
+        if(startDateTime == null) return ""; // 기저사례
+        return StockUtils.beforeTime(startDateTime, LocalDateTime.now());
+    }
+    
     /**
      * 일시를 받아서 초전,분전,시전,일전을 계산해서 반환
      * @param localDateTime
      * @return
      */
-    public static String beforeTime(LocalDateTime localDateTime) {
-        if(localDateTime == null) return ""; // 기저사례
+    public static String beforeTime(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        if(startDateTime == null || endDateTime == null) return ""; // 기저사례
 
-        long diff = ChronoUnit.SECONDS.between(localDateTime, LocalDateTime.now());
+        long diff = ChronoUnit.SECONDS.between(startDateTime, endDateTime);
 
         long hour = diff / 3600;
         diff = diff % 3600;
@@ -251,4 +260,61 @@ public class StockUtils {
         }
         return ret;
     }
+    
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class StockHighest{
+        private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
+    }
+    
+    /**
+     * 기간내 최고가 찾기
+     * @param code
+     * @param investDate
+     * @return
+     */
+    @Cacheable(value = "stockHighestCache")
+    public StockHighest getStockHighest(String code, InvestDate investDate) {
+        
+        Stock yahooStock = null;
+        List<HistoricalQuote> quoteList = null;
+        
+        Calendar startDt = Calendar.getInstance();
+        Calendar endDt = Calendar.getInstance();
+        
+        switch (investDate) {
+            case DAY1 -> startDt.add(Calendar.DATE,-1);
+            case WEEK1 -> startDt.add(Calendar.WEEK_OF_YEAR, -1);
+            case MONTH1 -> startDt.add(Calendar.MONTH, -1);
+            case MONTH6 -> startDt.add(Calendar.MONTH, -6);
+            case YEAR1 -> startDt.add(Calendar.YEAR, -1);
+            case YEAR5 -> startDt.add(Calendar.YEAR, -5);
+            case YEAR10 -> startDt.add(Calendar.YEAR, -10);
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+        };
+        
+        Comparator<HistoricalQuote> comparatorByHigh = 
+                (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 :x1.getHigh().compareTo(x2.getHigh());
+        
+        try {
+            yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
+            quoteList = yahooStock.getHistory(startDt, endDt, Interval.DAILY);
+        } catch (IOException e) {
+            log.error("[" + code + "]의 정보를 가져오는데 실패", e);
+        }
+        
+        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
+                .orElseThrow(NoSuchElementException::new);
+        
+        return StockHighest.builder()
+                .maxQuote(maxQuote)
+                .build();
+    }
+    
+    public static LocalDateTime getLocalDateTime(Calendar calendar){
+        return  LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
+    }
+    
+   
 }
