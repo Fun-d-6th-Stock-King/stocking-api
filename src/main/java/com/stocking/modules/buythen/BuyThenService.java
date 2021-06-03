@@ -132,7 +132,14 @@ public class BuyThenService {
         InvestDate investDate = buyThenForm.getInvestDate();    // 투자 날짜
         BigDecimal investPrice = buyThenForm.getInvestPrice();  // 투자금
 
-        Boolean isExceptCase = Boolean.FALSE;                // 예외 케이스 여부
+        Boolean isExceptCase;                                   // 예외 케이스 여부
+
+        // 종목 예외 확인
+        Boolean isTradingHalt = stockPrice.getTradingHalt();
+        Boolean isInvestmentAlert = stockPrice.getInvestmentAlert();
+        Boolean isManagement = stockPrice.getManagement();
+        Boolean isStockExcept = isTradingHalt | isInvestmentAlert | isManagement;
+        isExceptCase = isStockExcept;
 
         // 과거 주가
         List<InvestDate> investDates = new ArrayList<InvestDate>(EnumSet.allOf(InvestDate.class));
@@ -186,6 +193,7 @@ public class BuyThenService {
             isExceptCase = Boolean.TRUE;
             isPriceExcept = Boolean.TRUE;
         }
+
         // 상승률 계산
         RealTimeStock realTimeStock = stockUtils.getStockInfo(code);
 
@@ -269,6 +277,10 @@ public class BuyThenService {
                     .isPriceExcept(isPriceExcept)
                     .oldInvestPrice(investPrice)
                     .newInvestPrice(newInvestPrice)
+                    .isStockExcept(isStockExcept)
+                    .isTradingHalt(isTradingHalt)
+                    .isInvestmentAlert(isInvestmentAlert)
+                    .isManagement(isManagement)
                     .build())
             .build();
         
