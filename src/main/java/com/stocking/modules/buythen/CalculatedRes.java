@@ -24,7 +24,7 @@ public class CalculatedRes {
     @ApiModelProperty(notes = "계산 결과", required=false, position=5)
     private CalculatedValue calculatedValue;
     @ApiModelProperty(notes = "예외 케이스", required=false, position=6)
-    private ExceptionCase exceptionCase;
+    private ExceptCase exceptCase;
     
     @Data
     @AllArgsConstructor
@@ -53,27 +53,31 @@ public class CalculatedRes {
     @Data
     @AllArgsConstructor
     @Builder
-    public static class ExceptionCase {
+    public static class ExceptCase {
         @ApiModelProperty(notes = "예외 케이스 여부", required=false, position=1)
-        private Boolean isExceptionCase;
+        private Boolean isExceptCase;
 
         @ApiModelProperty(notes = "기간값 예외 케이스 여부", required=false, position=2)
-        private Boolean isDateException;
+        private Boolean isDateExcept;
         @ApiModelProperty(notes = "기존 투자 날짜", required=false, position=3)
         private InvestDate oldInvestDate;
         @ApiModelProperty(notes = "새 투자 날짜", required=false, position=4)
         private InvestDate newInvestDate;
 
         @ApiModelProperty(notes = "금액값 예외 케이스 여부", required=false, position=5)
-        private Boolean isPriceException;
+        private Boolean isPriceExcept;
         @ApiModelProperty(notes = "기존 금액값", required=false, position=6)
         private BigDecimal oldInvestPrice;
         @ApiModelProperty(notes = "새 금액값", required=false, position=7)
         private BigDecimal newInvestPrice;
 
         @ApiModelProperty(notes = "종목 예외 케이스 여부", required=false, position=8)
-        private Boolean isStockException;
-        @ApiModelProperty(notes = "종목 예외 경고 메시지", required=false, position=9)
-        private String stockWarnMsg;
+        private Boolean isStockExcept;
+        @ApiModelProperty(notes = "거래중지 여부", required=false, position=9)
+        private Boolean isTradingHalt;
+        @ApiModelProperty(notes = "투자경고 여부", required=false, position=10)
+        private Boolean isInvestmentAlert;
+        @ApiModelProperty(notes = "관리종목(상장폐지 우려) 여부", required=false, position=11)
+        private Boolean isManagement;
     }
 }
