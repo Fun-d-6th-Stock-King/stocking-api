@@ -69,7 +69,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BuyThenService {
     
-//	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss"; 
+//	private static final String FORMAT = "yyyy-MM-dd HH:mm:ss";
+    private static final String KOSPI = "KS11";     // 코스피 종목 코드
+    private static final String SAMSUNG = "005930"; // 삼성전자 종목 코드
+    private static final String SK = "000660";      // SK하이닉스 종목 코드
+    private static final String KAKAO = "035720";   // 카카오 종목 코드
 
     @Autowired
     private StockRepository stockRepository;
@@ -171,19 +175,6 @@ public class BuyThenService {
                     stock.getCompany() + " 의 주식 데이터가 존재하지 않습니다."
             );
         }
-        
-        // 종가일자
-        LocalDateTime oldCloseDate = switch (newInvestDate) {
-            case DAY1 -> stockPrice.getLastTradeDate();
-            case WEEK1 -> stockPrice.getDateW1();
-            case MONTH1 -> stockPrice.getDateM1();
-            case MONTH6 -> stockPrice.getDateM6();
-            case YEAR1 -> stockPrice.getDateY1();
-            case YEAR5 -> stockPrice.getDateY5();
-            case YEAR10 -> stockPrice.getDateY10();
-            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
-        };
-
 
         // 금액값 예외 확인
         BigDecimal newInvestPrice = investPrice;
@@ -205,35 +196,96 @@ public class BuyThenService {
         BigDecimal yieldPrice = newInvestPrice.add(newInvestPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
 
 
-        // 연봉, 월급 계산
-        BigDecimal salaryYear = null;      // 연봉
-        BigDecimal salaryMonth = null;     // 월급
-        
+        // 연봉/월급, 삼성/sk/kakao 주식 계산, 종가일자
+        BigDecimal salaryYear = null;   // 연봉
+        BigDecimal salaryMonth = null;  // 월급
+
+        BigDecimal samsungStock = null; // 삼성 주식 수
+        BigDecimal skStock = null;      // sk 주식 수
+        BigDecimal kakaoStock = null;   // kakao 주식 수
+        StocksPrice samsungStockPrice = stocksPriceRepository.findByCode(SAMSUNG)
+                .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+        StocksPrice skStockPrice = stocksPriceRepository.findByCode(SK)
+                .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+        StocksPrice kakaoStockPrice = stocksPriceRepository.findByCode(KAKAO)
+                .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
+
+        LocalDateTime oldCloseDate;     // 종가일자
+
         switch (newInvestDate) {
-            case DAY1, WEEK1, MONTH1 :
+            case DAY1 :
+                // 급여
                 salaryYear = yieldPrice;
                 salaryMonth = yieldPrice;
+                // 삼성, sk, 카카오
+                samsungStock = samsungStockPrice.getPrice();
+                skStock = skStockPrice.getPrice();
+                kakaoStock = kakaoStockPrice.getPrice();
+
+                // 종가일자
+                oldCloseDate = stockPrice.getLastTradeDate();
+                break;
+            case WEEK1 :
+                salaryYear = yieldPrice;
+                salaryMonth = yieldPrice;
+                samsungStock = samsungStockPrice.getPriceW1();
+                skStock = skStockPrice.getPriceW1();
+                kakaoStock = kakaoStockPrice.getPriceW1();
+                oldCloseDate = stockPrice.getDateW1();
+                break;
+            case MONTH1 :
+                salaryYear = yieldPrice;
+                salaryMonth = yieldPrice;
+                samsungStock = samsungStockPrice.getPriceM1();
+                skStock = skStockPrice.getPriceM1();
+                kakaoStock = kakaoStockPrice.getPriceM1();
+                oldCloseDate = stockPrice.getDateM1();
                 break;
             case MONTH6 :
                 salaryYear = yieldPrice;
                 salaryMonth = yieldPrice.divide(new BigDecimal(6), MathContext.DECIMAL32);
+                samsungStock = samsungStockPrice.getPriceM6();
+                skStock = skStockPrice.getPriceM6();
+                kakaoStock = kakaoStockPrice.getPriceM6();
+                oldCloseDate = stockPrice.getDateM6();
                 break;
             case YEAR1 :
                 salaryYear = yieldPrice;
                 salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
+                samsungStock = samsungStockPrice.getPriceY1();
+                skStock = skStockPrice.getPriceY1();
+                kakaoStock = kakaoStockPrice.getPriceY1();
+                oldCloseDate = stockPrice.getDateY1();
                 break;
             case YEAR5 :
                 salaryYear = yieldPrice.divide(new BigDecimal(5), MathContext.DECIMAL32);
                 salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
+                samsungStock = samsungStockPrice.getPriceY5();
+                skStock = skStockPrice.getPriceY5();
+                kakaoStock = kakaoStockPrice.getPriceY5();
+                oldCloseDate = stockPrice.getDateY5();
                 break;
             case YEAR10 :
                 salaryYear = yieldPrice.divide(new BigDecimal(10), MathContext.DECIMAL32);
                 salaryMonth = salaryYear.divide(new BigDecimal(12), MathContext.DECIMAL32);
+                samsungStock = samsungStockPrice.getPriceY10();
+                skStock = skStockPrice.getPriceY10();
+                kakaoStock = kakaoStockPrice.getPriceY10();
+                oldCloseDate = stockPrice.getDateY10();
                 break;
-            default : throw new IllegalArgumentException("Unexpected value: " + investDate);
+            default : throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
         }
 
-        
+        samsungStock = newInvestPrice
+                .divide(samsungStock, MathContext.DECIMAL32)
+                .setScale(1, RoundingMode.HALF_UP);
+        skStock = newInvestPrice
+                .divide(skStock, MathContext.DECIMAL32)
+                .setScale(1, RoundingMode.HALF_UP);
+        kakaoStock = newInvestPrice
+                .divide(kakaoStock, MathContext.DECIMAL32)
+                .setScale(1, RoundingMode.HALF_UP);
+
         // 계산이력 저장
         calcHistRepository.save(
     		CalcHist.builder()
@@ -267,6 +319,9 @@ public class BuyThenService {
                     .holdingStock(holdingStock)
                     .salaryYear(salaryYear)
                     .salaryMonth(salaryMonth)
+                    .samsungStock(samsungStock)
+                    .skStock(skStock)
+                    .kakaoStock(kakaoStock)
                     .build())
             .exceptCase(
                 ExceptCase.builder()
@@ -310,7 +365,7 @@ public class BuyThenService {
                 .setScale(2, RoundingMode.HALF_EVEN);
 
         // 코스피
-        String kosCode = "KS11"; // 코스피 종목 코드
+        String kosCode = KOSPI; // 코스피 종목 코드
         Stock kosStock = stockRepository.findByCode(kosCode)
                 .orElseThrow(() -> new Exception(
                         "코스피 종목코드(" + kosCode + ")가 올바르지 않습니다.")

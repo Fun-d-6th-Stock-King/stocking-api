@@ -44,10 +44,16 @@ public class CalculatedRes {
         private BigDecimal oldPrice;
         @ApiModelProperty(notes = "보유 주식 수", required=false, position=7)
         private BigDecimal holdingStock;
-        @ApiModelProperty(notes = "연봉", required=false, position=8)
+        @ApiModelProperty(notes = "연봉(수익률 상승일 때)", required=false, position=8)
         private BigDecimal salaryYear;
-        @ApiModelProperty(notes = "월급", required=false, position=9)
+        @ApiModelProperty(notes = "월급(수익률 상승일 때)", required=false, position=9)
         private BigDecimal salaryMonth;
+        @ApiModelProperty(notes = "삼성 주식 수(수익률 하락일 때)", required = false, position = 10)
+        private BigDecimal samsungStock;
+        @ApiModelProperty(notes = "SK 하이닉스 주식 수(수익률 하락일 때)", required = false, position = 11)
+        private BigDecimal skStock;
+        @ApiModelProperty(notes = "카카오 주식 수(수익률 하락일 때)", required = false, position = 12)
+        private BigDecimal kakaoStock;
     }
 
     @Data
