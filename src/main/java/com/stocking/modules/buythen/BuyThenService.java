@@ -191,9 +191,17 @@ public class BuyThenService {
         BigDecimal currentPrice = realTimeStock.getCurrentPrice(); // 현재가 - 실시간정보 호출
         String lastTradeTime = realTimeStock.getLastTradeTime();
 
-        BigDecimal holdingStock = newInvestPrice.divide(oldStockPrice.get(), MathContext.DECIMAL32);     // 내가 산 주식 개수
-        BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice.get()).divide(oldStockPrice.get(), MathContext.DECIMAL32).multiply(new BigDecimal(100));  // (현재가-이전종가)/이전종가 * 100
-        BigDecimal yieldPrice = newInvestPrice.add(newInvestPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
+        BigDecimal holdingStock = newInvestPrice  // 내가 산 주식 개수
+                .divide(oldStockPrice.get(), MathContext.DECIMAL32)
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal yieldPercent = currentPrice.subtract(oldStockPrice.get()) // (현재가-이전종가)/이전종가 * 100
+                .divide(oldStockPrice.get(), MathContext.DECIMAL32)
+                .multiply(new BigDecimal(100))
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal yieldPrice = newInvestPrice.add(
+                newInvestPrice
+                .multiply(yieldPercent)
+                .divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
 
 
         // 연봉/월급, 삼성/sk/kakao 주식 계산, 종가일자
@@ -275,16 +283,15 @@ public class BuyThenService {
                 break;
             default : throw new IllegalArgumentException("Unexpected value: " + newInvestDate);
         }
-
         samsungStock = newInvestPrice
                 .divide(samsungStock, MathContext.DECIMAL32)
-                .setScale(1, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         skStock = newInvestPrice
                 .divide(skStock, MathContext.DECIMAL32)
-                .setScale(1, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
         kakaoStock = newInvestPrice
                 .divide(kakaoStock, MathContext.DECIMAL32)
-                .setScale(1, RoundingMode.HALF_UP);
+                .setScale(2, RoundingMode.HALF_UP);
 
         // 계산이력 저장
         calcHistRepository.save(
