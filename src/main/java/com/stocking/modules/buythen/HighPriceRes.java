@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import yahoofinance.histquotes.HistoricalQuote;
 
+import java.math.BigDecimal;
+
 @Data
 @AllArgsConstructor
 @Builder
@@ -22,7 +24,10 @@ public class HighPriceRes {
     
     @ApiModelProperty(notes = "분류 한글명", required=false, position=5)
     private String sectorKor;
-    
+
+    @ApiModelProperty(notes = "현재 주가", required=false, position=6)
+    private BigDecimal currentPrice;
+
     @ApiModelProperty(notes = "10년 내 최고가 일자 정보", required=false, position=7)
-    private HistoricalQuote maxQuote;   
+    private HistoricalQuote maxQuote;
 }

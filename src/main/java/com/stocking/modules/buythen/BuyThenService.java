@@ -702,17 +702,22 @@ public class BuyThenService {
         
         List<StocksPrice> stockList = stocksPriceRepository
                 .findByCodeInOrderByMarketCapDesc("005930", "000660", "035720", "005380");
-        
+
         return stockList.stream()
             .map(vo -> {
                 StockHist stockHist = stockUtils.getStockHist(vo.getCode());
-                return HighPriceRes.builder()
-                    .code(vo.getCode())
-                    .company(vo.getCompany())
-                    .sector(vo.getSectorYahoo())
-                    .sectorKor(vo.getSectorKor())
-                    .maxQuote(stockHist.getMaxQuote())
-                    .build();
+                try {
+                    return HighPriceRes.builder()
+                        .code(vo.getCode())
+                        .company(vo.getCompany())
+                        .sector(vo.getSectorYahoo())
+                        .sectorKor(vo.getSectorKor())
+                        .currentPrice(stockUtils.getStockInfo(vo.getCode()).getCurrentPrice())
+                        .maxQuote(stockHist.getMaxQuote())
+                        .build();
+                } catch (IOException exception) {
+                    throw new IllegalArgumentException("Unexpected : stockUtils.getStockInfo failed");
+                }
             }).collect(Collectors.toList());
     }
     

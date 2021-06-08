@@ -109,7 +109,7 @@ public class BuyThenController {
         response = HighPriceRes.class)
     @GetMapping("/high-price-10year")
     public ResponseEntity<Object> getHighPrice(
-    ) throws IOException {
+    ) throws Exception {
         return new ResponseEntity<>(
             buyThenService.getHighPrice()
         , HttpStatus.OK);
