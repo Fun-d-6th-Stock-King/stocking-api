@@ -834,10 +834,6 @@ public class BuyThenService {
         StocksPrice stockPrice = stocksPriceRepository.findByCode(buyThenForm.getCode())
             .orElseThrow(() -> new Exception("종목코드가 올바르지 않습니다."));
         
-        if(investDate != getExistMaxDate(stockPrice)) {
-            investDate = getExistMaxDate(stockPrice);
-        }
-        
         BigDecimal oldStockPrice = switch (investDate) {
             case DAY1 -> stockPrice.getPrice();
             case WEEK1 -> stockPrice.getPriceW1();
@@ -848,6 +844,21 @@ public class BuyThenService {
             case YEAR10 -> stockPrice.getPriceY10();
             default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
         };
+        
+        if(oldStockPrice == null) {
+            investDate = getExistMaxDate(stockPrice);
+            
+            oldStockPrice = switch (investDate) {
+                case DAY1 -> stockPrice.getPrice();
+                case WEEK1 -> stockPrice.getPriceW1();
+                case MONTH1 -> stockPrice.getPriceM1();
+                case MONTH6 -> stockPrice.getPriceM6();
+                case YEAR1 -> stockPrice.getPriceY1();
+                case YEAR5 -> stockPrice.getPriceY5();
+                case YEAR10 -> stockPrice.getPriceY10();
+                default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+            };
+        }
         
         LocalDateTime oldCloseDate = switch (investDate) {
             case DAY1 -> stockPrice.getLastTradeDate();

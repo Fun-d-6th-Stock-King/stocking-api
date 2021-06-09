@@ -38,6 +38,8 @@ public class StockUtils {
     
     @Autowired
     private StockRepository stockRepository;
+    
+    private static boolean RUNNING = false;
 
     /**
      * 종목코드를 받아서 현재가, 마지막거래일시를 실시간으로 받아옴(1시간단위캐시)
@@ -105,6 +107,15 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHistCache", key = "#code")
     public StockHist getStockHist(String code) {
+        while(RUNNING) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.error("Thread.sleep 에러", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+        RUNNING = true;
         
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
@@ -131,6 +142,8 @@ public class StockUtils {
         
         com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
         
+        RUNNING = false;
+        
         return StockHist.builder()
                 .code(code)
                 .price(yahooStock.getQuote().getPrice())                     // 현재 시세
@@ -151,6 +164,16 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHighLow", key = "#code")
     public StockHighLow getStockHighLow(String code) {
+        while(RUNNING) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.error("Thread.sleep 에러", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+        RUNNING = true;
+        
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
         
@@ -165,7 +188,7 @@ public class StockUtils {
             Calendar startDt = Calendar.getInstance();
             Calendar endDt = Calendar.getInstance();
             startDt.add(Calendar.DATE, -10);
-            quoteList = yahooStock.getHistory(startDt, endDt, Interval.DAILY);
+            quoteList = yahooStock.getHistory(startDt, endDt, Interval.WEEKLY);
         } catch (IOException e) {
             log.error(code + " historical data 가져오는데 실패하였습니다.", e);
         }
@@ -179,6 +202,8 @@ public class StockUtils {
         com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
         
         StockQuote quote = yahooStock.getQuote();
+        
+        RUNNING = false;
         
         return StockHighLow.builder()
                 .code(code)
@@ -276,6 +301,15 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHighestCache")
     public StockHighest getStockHighest(String code, InvestDate investDate) {
+        while(RUNNING) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.error("Thread.sleep 에러", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+        RUNNING = true;
         
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
@@ -306,6 +340,8 @@ public class StockUtils {
         
         HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
                 .orElseThrow(NoSuchElementException::new);
+        
+        RUNNING = false;
         
         return StockHighest.builder()
                 .maxQuote(maxQuote)
