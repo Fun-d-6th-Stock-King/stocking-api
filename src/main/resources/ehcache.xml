@@ -107,6 +107,7 @@
         alias 는 @Cacheable(value = "codes", key="#codeGrp") 여기에서 썻던 value 값으로
     -->
     <cache alias="stockCache" uses-template="template"></cache>
+    <cache alias="stockArrayCache" uses-template="template"></cache>
     <cache alias="stockHistCache" uses-template="template2"></cache>
     <cache alias="stockList" uses-template="template2"></cache>
 	<cache alias="stockHighLow" uses-template="template"></cache>

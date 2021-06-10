@@ -73,6 +73,7 @@ public class StockUtils {
      * @return
      * @throws IOException
      */
+    @Cacheable(value = "stockArrayCache")
     public BigDecimal getCurrentSumPrice(String[] codes) throws IOException{
         Map<String, Stock> yahooStock = YahooFinance.get(codes);
         BigDecimal sumPrice = new BigDecimal(0);
