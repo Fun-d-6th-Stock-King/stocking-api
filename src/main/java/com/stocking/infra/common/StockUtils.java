@@ -34,13 +34,11 @@ import yahoofinance.quotes.stock.StockQuote;
 @Slf4j
 public class StockUtils {
     
-    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss");
     
     @Autowired
     private StockRepository stockRepository;
     
-    private static boolean RUNNING = false;
-
     /**
      * 종목코드를 받아서 현재가, 마지막거래일시를 실시간으로 받아옴(1시간단위캐시)
      * @param code
@@ -50,10 +48,13 @@ public class StockUtils {
     @Cacheable(value = "stockCache", key = "#code")
     public RealTimeStock getStockInfo(String code) throws IOException{
         // kospi 일 때만 symbol 규칙이 변경됨
+        return getStock(code);
+    }
+    
+    private static synchronized RealTimeStock getStock(String code) throws IOException{
+        // kospi 일 때만 symbol 규칙이 변경됨
         Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
 
-        Date now = new Date();
-        
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
@@ -62,9 +63,8 @@ public class StockUtils {
                 .yearHigh(yahooStock.getQuote().getYearHigh())
                 .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
                 .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
-                .currentTime(sdf.format(now))
+                .currentTime(sdf.format(new Date()))
                 .build();
-        
     }
 
     /**
@@ -107,15 +107,11 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHistCache", key = "#code")
     public StockHist getStockHist(String code) {
-        while(RUNNING) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                log.error("Thread.sleep 에러", e);
-                Thread.currentThread().interrupt();
-            }
-        }
-        RUNNING = true;
+        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
+        return getStockHist(code, (stockDB != null) ? stockDB.getCompany() : "");
+    }
+    
+    private static synchronized StockHist getStockHist(String code, String company) {
         
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
@@ -130,8 +126,7 @@ public class StockUtils {
             startDt.add(Calendar.YEAR, -10);
             quoteList = yahooStock.getHistory(startDt, endDt, Interval.WEEKLY);
         } catch (IOException e) {
-            e.printStackTrace();
-            log.error(e.getLocalizedMessage());
+            log.error("yahoo finace api 호출 에러",e);
         }
         
         HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
@@ -140,21 +135,26 @@ public class StockUtils {
         HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
             .orElseThrow(NoSuchElementException::new); 
         
-        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
-        
-        RUNNING = false;
+        try {
+            Thread.sleep(300);
+            log.info("0.3초 sleep == " + company);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("sleep 에러" + company, e);
+        }
         
         return StockHist.builder()
                 .code(code)
                 .price(yahooStock.getQuote().getPrice())                     // 현재 시세
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
-                .company(stockDB != null ? stockDB.getCompany() : "")
+                .company(company)
                 .change(yahooStock.getQuote().getChange())
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent()) // 등락률
                 .maxQuote(maxQuote)
                 .minQuote(minQuote)
                 .quoteList(quoteList.stream().filter(vo -> vo.getClose() != null).collect(Collectors.toList()))
                 .build();
+        
     }
     
     /**
@@ -164,16 +164,12 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHighLow", key = "#code")
     public StockHighLow getStockHighLow(String code) {
-        while(RUNNING) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                log.error("Thread.sleep 에러", e);
-                Thread.currentThread().interrupt();
-            }
-        }
-        RUNNING = true;
+        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
         
+        return getStockHighLow(code, (stockDB != null) ? stockDB.getCompany() : "");
+    }
+    
+    private static synchronized StockHighLow getStockHighLow(String code, String company) {
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
         
@@ -199,15 +195,19 @@ public class StockUtils {
         HistoricalQuote minQuote = quoteList.stream().min(comparatorByLow)
             .orElseThrow(NoSuchElementException::new);
         
-        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
-        
         StockQuote quote = yahooStock.getQuote();
         
-        RUNNING = false;
+        try {
+            Thread.sleep(300);
+            log.info("0.3초 sleep == " + company);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("sleep 에러" + company, e);
+        }
         
         return StockHighLow.builder()
                 .code(code)
-                .company(stockDB != null ? stockDB.getCompany() : "")
+                .company(company)
                 .price(quote.getPrice())
                 .changeInPercent(quote.getChangeInPercent())
                 .dayHigh(quote.getDayHigh())
@@ -301,15 +301,10 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHighestCache")
     public StockHighest getStockHighest(String code, InvestDate investDate) {
-        while(RUNNING) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                log.error("Thread.sleep 에러", e);
-                Thread.currentThread().interrupt();
-            }
-        }
-        RUNNING = true;
+        return getStockHighestSync(code, investDate);
+    }
+    
+    public static synchronized StockHighest getStockHighestSync(String code, InvestDate investDate) {
         
         Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
@@ -341,7 +336,13 @@ public class StockUtils {
         HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
                 .orElseThrow(NoSuchElementException::new);
         
-        RUNNING = false;
+        try {
+            Thread.sleep(300);
+            log.info("0.3초 sleep == " + code);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("sleep 에러" + code, e);
+        }
         
         return StockHighest.builder()
                 .maxQuote(maxQuote)
