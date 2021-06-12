@@ -137,8 +137,8 @@ public class StockUtils {
             .orElseThrow(NoSuchElementException::new); 
         
         try {
-            Thread.sleep(300);
-            log.info("0.3초 sleep == " + company);
+            Thread.sleep(800);
+            log.info("0.8초 sleep == " + company);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("sleep 에러" + company, e);
