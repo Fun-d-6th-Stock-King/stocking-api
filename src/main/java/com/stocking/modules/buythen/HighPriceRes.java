@@ -1,12 +1,13 @@
 package com.stocking.modules.buythen;
 
+import java.math.BigDecimal;
+
+import com.stocking.modules.buythen.repo.StockHistory;
+
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import yahoofinance.histquotes.HistoricalQuote;
-
-import java.math.BigDecimal;
 
 @Data
 @AllArgsConstructor
@@ -29,5 +30,5 @@ public class HighPriceRes {
     private BigDecimal currentPrice;
 
     @ApiModelProperty(notes = "10년 내 최고가 일자 정보", required=false, position=7)
-    private HistoricalQuote maxQuote;
+    private StockHistory maxQuote;
 }

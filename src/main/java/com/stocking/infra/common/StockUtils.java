@@ -11,20 +11,23 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.stocking.modules.buythen.InvestDate;
+import com.stocking.modules.buythen.repo.QStockHistory;
+import com.stocking.modules.buythen.repo.StockHistory;
+import com.stocking.modules.stock.Stock;
 import com.stocking.modules.stock.StockRepository;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
 import yahoofinance.histquotes.HistoricalQuote;
 import yahoofinance.histquotes.Interval;
@@ -38,6 +41,9 @@ public class StockUtils {
     
     @Autowired
     private StockRepository stockRepository;
+    
+    @Autowired
+    private JPAQueryFactory queryFactory;
     
     /**
      * 종목코드를 받아서 현재가, 마지막거래일시를 실시간으로 받아옴(1시간단위캐시)
@@ -53,7 +59,7 @@ public class StockUtils {
     
     private static synchronized RealTimeStock getStock(String code) throws IOException{
         // kospi 일 때만 symbol 규칙이 변경됨
-        Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
+        yahoofinance.Stock yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
 
         return RealTimeStock.builder()
                 .currentPrice(yahooStock.getQuote().getPrice())
@@ -75,7 +81,7 @@ public class StockUtils {
      */
     @Cacheable(value = "stockArrayCache")
     public BigDecimal getCurrentSumPrice(String[] codes) throws IOException{
-        Map<String, Stock> yahooStock = YahooFinance.get(codes);
+        Map<String, yahoofinance.Stock> yahooStock = YahooFinance.get(codes);
         BigDecimal sumPrice = new BigDecimal(0);
 
         for (String key : yahooStock.keySet()) {
@@ -108,54 +114,43 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHistCache", key = "#code")
     public StockHist getStockHist(String code) {
-        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
-        return getStockHist(code, (stockDB != null) ? stockDB.getCompany() : "");
-    }
-    
-    private static synchronized StockHist getStockHist(String code, String company) {
+        QStockHistory qStockHistory = QStockHistory.stockHistory;
         
-        Stock yahooStock = null;
-        List<HistoricalQuote> quoteList = null;
+        List<StockHistory> stockHistoryList = queryFactory.selectFrom(qStockHistory)
+            .where(qStockHistory.code.eq(code)
+                .and(qStockHistory.date.between(LocalDateTime.now().minusYears(10), LocalDateTime.now()))
+                .and(Expressions.stringTemplate("EXTRACT(DOW from {0})", qStockHistory.date).eq(Expressions.stringTemplate("EXTRACT(DOW from now())")))
+            ).fetch();
         
-        Comparator<HistoricalQuote> comparatorByClose = 
-                (x1, x2) -> (x1.getClose() == null || x2.getClose() == null) ? 0 :x1.getClose().compareTo(x2.getClose());
+        String company = stockRepository.findByCode(code).map(Stock::getCompany).orElse("");
         
+        RealTimeStock realTimeStock = null;        
         try {
-            yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
-            Calendar startDt = Calendar.getInstance();
-            Calendar endDt = Calendar.getInstance();
-            startDt.add(Calendar.YEAR, -10);
-            quoteList = yahooStock.getHistory(startDt, endDt, Interval.WEEKLY);
+            realTimeStock = getStockInfo(code);
         } catch (IOException e) {
             log.error("yahoo finace api 호출 에러",e);
         }
         
-        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByClose)
+        Comparator<StockHistory> comparatorByClose = 
+                (x1, x2) -> (x1.getClose() == null || x2.getClose() == null) ? 0 :x1.getClose().compareTo(x2.getClose());
+        
+        StockHistory maxQuote = stockHistoryList.stream().max(comparatorByClose)
                 .orElseThrow(NoSuchElementException::new);
             
-        HistoricalQuote minQuote = quoteList.stream().min(comparatorByClose)
+        StockHistory minQuote = stockHistoryList.stream().min(comparatorByClose)
             .orElseThrow(NoSuchElementException::new); 
-        
-        try {
-            Thread.sleep(800);
-            log.info("0.8초 sleep == " + company);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("sleep 에러" + company, e);
-        }
         
         return StockHist.builder()
                 .code(code)
-                .price(yahooStock.getQuote().getPrice())                     // 현재 시세
-                .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
+                .price(realTimeStock.getCurrentPrice())                     // 현재 시세
+                .lastTradeTime(realTimeStock.getLastTradeTime())
                 .company(company)
-                .change(yahooStock.getQuote().getChange())
-                .changeInPercent(yahooStock.getQuote().getChangeInPercent()) // 등락률
+                .change(realTimeStock.getChange())
+                .changeInPercent(realTimeStock.getChangeInPercent()) // 등락률
                 .maxQuote(maxQuote)
                 .minQuote(minQuote)
-                .quoteList(quoteList.stream().filter(vo -> vo.getClose() != null).collect(Collectors.toList()))
+                .quoteList(stockHistoryList)
                 .build();
-        
     }
     
     /**
@@ -165,13 +160,11 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHighLow", key = "#code")
     public StockHighLow getStockHighLow(String code) {
-        com.stocking.modules.stock.Stock stockDB = stockRepository.findByCode(code).orElse(null);
-        
-        return getStockHighLow(code, (stockDB != null) ? stockDB.getCompany() : "");
+        return getStockHighLow(code, stockRepository.findByCode(code).map(Stock::getCompany).orElse(""));
     }
     
     private static synchronized StockHighLow getStockHighLow(String code, String company) {
-        Stock yahooStock = null;
+        yahoofinance.Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
         
         Comparator<HistoricalQuote> comparatorByHigh = 
@@ -191,7 +184,7 @@ public class StockUtils {
         }
         
         HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
-                .orElseThrow(NoSuchElementException::new);
+            .orElseThrow(NoSuchElementException::new);
             
         HistoricalQuote minQuote = quoteList.stream().min(comparatorByLow)
             .orElseThrow(NoSuchElementException::new);
@@ -247,9 +240,9 @@ public class StockUtils {
         private String lastTradeTime;
         private BigDecimal change;
         private BigDecimal changeInPercent;
-        private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
-        private HistoricalQuote minQuote;
-        private List<HistoricalQuote> quoteList;
+        private StockHistory maxQuote;   // 10년 내 최고가 일자 정보
+        private StockHistory minQuote;
+        private List<StockHistory> quoteList;
     }
     
     public static String beforeTime(LocalDateTime startDateTime) {
@@ -307,7 +300,7 @@ public class StockUtils {
     
     public static synchronized StockHighest getStockHighestSync(String code, InvestDate investDate) {
         
-        Stock yahooStock = null;
+        yahoofinance.Stock yahooStock = null;
         List<HistoricalQuote> quoteList = null;
         
         Calendar startDt = Calendar.getInstance();

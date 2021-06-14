@@ -702,7 +702,7 @@ public class BuyThenService {
         
         List<StocksPrice> stockList = stocksPriceRepository
                 .findByCodeInOrderByMarketCapDesc("005930", "000660", "035720", "005380");
-
+        stockUtils.getStockHist("zxczxc");
         return stockList.stream()
             .map(vo -> {
                 StockHist stockHist = stockUtils.getStockHist(vo.getCode());
