@@ -200,12 +200,12 @@ public class StockUtils {
                 .company(stockRepository.findByCode(code).map(Stock::getCompany).orElse(""))
                 .price(realTimeStock.getCurrentPrice())
                 .changeInPercent(realTimeStock.getChangeInPercent())
-                .dayHigh(realTimeStock.getDayHigh())
-                .dayLow(realTimeStock.getDayLow())
-                .weekHigh(maxQuote.getHigh())
-                .weekLow(minQuote.getLow())
-                .yearHigh(realTimeStock.getYearHigh())
-                .yearLow(realTimeStock.getYearLow())
+                .dayHigh(realTimeStock.getDayHigh().doubleValue())
+                .dayLow(realTimeStock.getDayLow().doubleValue())
+                .weekHigh(maxQuote.getHigh().doubleValue())
+                .weekLow(minQuote.getLow().doubleValue())
+                .yearHigh(realTimeStock.getYearHigh().doubleValue())
+                .yearLow(realTimeStock.getYearLow().doubleValue())
                 .build();
     }
     
@@ -303,12 +303,12 @@ public class StockUtils {
         private BigDecimal price;
         private BigDecimal changeInPercent;
         
-        private BigDecimal dayHigh;
-        private BigDecimal dayLow;
-        private BigDecimal weekHigh;
-        private BigDecimal weekLow;
-        private BigDecimal yearHigh;
-        private BigDecimal yearLow;
+        private Double dayHigh;
+        private Double dayLow;
+        private Double weekHigh;
+        private Double weekLow;
+        private Double yearHigh;
+        private Double yearLow;
     }
     
     @Builder
