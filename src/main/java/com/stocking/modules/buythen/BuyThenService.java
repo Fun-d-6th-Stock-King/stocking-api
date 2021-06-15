@@ -702,7 +702,7 @@ public class BuyThenService {
         
         List<StocksPrice> stockList = stocksPriceRepository
                 .findByCodeInOrderByMarketCapDesc("005930", "000660", "035720", "005380");
-        stockUtils.getStockHist("zxczxc");
+        
         return stockList.stream()
             .map(vo -> {
                 StockHist stockHist = stockUtils.getStockHist(vo.getCode());
@@ -879,7 +879,7 @@ public class BuyThenService {
         BigDecimal yieldPrice = investPrice.add(investPrice.multiply(yieldPercent).divide(new BigDecimal(100)));  // 수익금 = 투자금 + (투자금*수익률*100)
         
         // 기간 계산
-        LocalDateTime endDateTime = StockUtils.getLocalDateTime(stockHighest.getMaxQuote().getDate());
+        LocalDateTime endDateTime = stockHighest.getMaxQuote().getDate();
         long diff = ChronoUnit.DAYS.between(oldCloseDate, endDateTime);
         long week = diff / 7L; 
         String period = String.format("%d주(%d일)", week, diff);

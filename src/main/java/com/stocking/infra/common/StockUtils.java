@@ -66,7 +66,10 @@ public class StockUtils {
                 .lastTradeTime(sdf.format(yahooStock.getQuote().getLastTradeTime().getTime()))
                 .changeInPercent(yahooStock.getQuote().getChangeInPercent())
                 .change(yahooStock.getQuote().getChange())
+                .dayHigh(yahooStock.getQuote().getDayHigh())
+                .dayLow(yahooStock.getQuote().getDayLow())
                 .yearHigh(yahooStock.getQuote().getYearHigh())
+                .yearLow(yahooStock.getQuote().getYearLow())
                 .changeFromYearHigh(yahooStock.getQuote().getChangeFromYearHigh())
                 .changeFromYearHighInPercent(yahooStock.getQuote().getChangeFromYearHighInPercent())
                 .currentTime(sdf.format(new Date()))
@@ -101,7 +104,10 @@ public class StockUtils {
         private BigDecimal change;
         private String currentTime;      // 현재가를 업데이트한 시간
         
+        private BigDecimal dayHigh;    
+        private BigDecimal dayLow;    
         private BigDecimal yearHigh;    // 연중 최고가
+        private BigDecimal yearLow;    
         private BigDecimal changeFromYearHigh;  // 연중 최고가와 현재가 차이 금액
         private BigDecimal changeFromYearHighInPercent; // 연중 최고가와 현재가 차이비율
     }
@@ -120,6 +126,7 @@ public class StockUtils {
             .where(qStockHistory.code.eq(code)
                 .and(qStockHistory.date.between(LocalDateTime.now().minusYears(10), LocalDateTime.now()))
                 .and(Expressions.stringTemplate("EXTRACT(DOW from {0})", qStockHistory.date).eq(Expressions.stringTemplate("EXTRACT(DOW from now())")))
+                .and(qStockHistory.close.isNotNull())
             ).fetch();
         
         String company = stockRepository.findByCode(code).map(Stock::getCompany).orElse("");
@@ -160,89 +167,89 @@ public class StockUtils {
      */
     @Cacheable(value = "stockHighLow", key = "#code")
     public StockHighLow getStockHighLow(String code) {
-        return getStockHighLow(code, stockRepository.findByCode(code).map(Stock::getCompany).orElse(""));
-    }
-    
-    private static synchronized StockHighLow getStockHighLow(String code, String company) {
-        yahoofinance.Stock yahooStock = null;
-        List<HistoricalQuote> quoteList = null;
+        QStockHistory qStockHistory = QStockHistory.stockHistory;
         
-        Comparator<HistoricalQuote> comparatorByHigh = 
+        // 주간 
+        List<StockHistory> stockHistoryList = queryFactory.selectFrom(qStockHistory)
+            .where(qStockHistory.code.eq(code)
+                .and(qStockHistory.date.between(LocalDateTime.now().minusDays(10), LocalDateTime.now()))
+                .and(qStockHistory.close.isNotNull())
+            ).fetch();
+        
+        Comparator<StockHistory> comparatorByHigh = 
                 (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 :x1.getHigh().compareTo(x2.getHigh());
                 
-        Comparator<HistoricalQuote> comparatorByLow = 
+        Comparator<StockHistory> comparatorByLow = 
                 (x1, x2) -> (x1.getLow() == null || x2.getLow() == null) ? 0 :x1.getLow().compareTo(x2.getLow());
         
+        RealTimeStock realTimeStock = null;        
         try {
-            yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
-            Calendar startDt = Calendar.getInstance();
-            Calendar endDt = Calendar.getInstance();
-            startDt.add(Calendar.DATE, -10);
-            quoteList = yahooStock.getHistory(startDt, endDt, Interval.WEEKLY);
+            realTimeStock = getStockInfo(code);
         } catch (IOException e) {
-            log.error(code + " historical data 가져오는데 실패하였습니다.", e);
+            log.error("yahoo finace api 호출 에러",e);
         }
         
-        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
+        StockHistory maxQuote = stockHistoryList.stream().max(comparatorByHigh)
             .orElseThrow(NoSuchElementException::new);
             
-        HistoricalQuote minQuote = quoteList.stream().min(comparatorByLow)
+        StockHistory minQuote = stockHistoryList.stream().min(comparatorByLow)
             .orElseThrow(NoSuchElementException::new);
-        
-        StockQuote quote = yahooStock.getQuote();
-        
-        try {
-            Thread.sleep(300);
-            log.info("0.3초 sleep == " + company);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("sleep 에러" + company, e);
-        }
         
         return StockHighLow.builder()
                 .code(code)
-                .company(company)
-                .price(quote.getPrice())
-                .changeInPercent(quote.getChangeInPercent())
-                .dayHigh(quote.getDayHigh())
-                .dayLow(quote.getDayLow())
+                .company(stockRepository.findByCode(code).map(Stock::getCompany).orElse(""))
+                .price(realTimeStock.getCurrentPrice())
+                .changeInPercent(realTimeStock.getChangeInPercent())
+                .dayHigh(realTimeStock.getDayHigh())
+                .dayLow(realTimeStock.getDayLow())
                 .weekHigh(maxQuote.getHigh())
                 .weekLow(minQuote.getLow())
-                .yearHigh(quote.getYearHigh())
-                .yearLow(quote.getYearLow())
+                .yearHigh(realTimeStock.getYearHigh())
+                .yearLow(realTimeStock.getYearLow())
                 .build();
     }
     
-    @Builder
-    @AllArgsConstructor
-    @Getter
-    public static class StockHighLow{
-        private String code;
-        private String company;
-        private BigDecimal price;
-        private BigDecimal changeInPercent;
+    /**
+     * 기간내 최고가 찾기
+     * @param code
+     * @param investDate
+     * @return
+     */
+    @Cacheable(value = "stockHighestCache")
+    public StockHighest getStockHighest(String code, InvestDate investDate) {
         
-        private BigDecimal dayHigh;
-        private BigDecimal dayLow;
-        private BigDecimal weekHigh;
-        private BigDecimal weekLow;
-        private BigDecimal yearHigh;
-        private BigDecimal yearLow;
+        LocalDateTime startDt = switch (investDate) {
+            case DAY1 -> LocalDateTime.now().minusDays(1);
+            case WEEK1 -> LocalDateTime.now().minusWeeks(1);
+            case MONTH1 -> LocalDateTime.now().minusMonths(1);
+            case MONTH6 -> LocalDateTime.now().minusMonths(6);
+            case YEAR1 -> LocalDateTime.now().minusYears(1);
+            case YEAR5 -> LocalDateTime.now().minusYears(5);
+            case YEAR10 -> LocalDateTime.now().minusYears(10);
+            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
+        };
+        
+        QStockHistory qStockHistory = QStockHistory.stockHistory;
+        
+        List<StockHistory> stockHistoryList = queryFactory.selectFrom(qStockHistory)
+            .where(qStockHistory.code.eq(code)
+                .and(qStockHistory.date.between(startDt, LocalDateTime.now()))
+                .and(qStockHistory.close.isNotNull())
+            ).fetch();
+        
+        Comparator<StockHistory> comparatorByHigh = 
+                (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 :x1.getHigh().compareTo(x2.getHigh());
+        
+        StockHistory maxQuote = stockHistoryList.stream().max(comparatorByHigh)
+            .orElseThrow(NoSuchElementException::new);
+        
+        return StockHighest.builder()
+                .maxQuote(maxQuote)
+                .build();
     }
     
-    @Builder
-    @AllArgsConstructor
-    @Getter
-    public static class StockHist{
-        private String code;
-        private String company;
-        private BigDecimal price;
-        private String lastTradeTime;
-        private BigDecimal change;
-        private BigDecimal changeInPercent;
-        private StockHistory maxQuote;   // 10년 내 최고가 일자 정보
-        private StockHistory minQuote;
-        private List<StockHistory> quoteList;
+    public static LocalDateTime getLocalDateTime(Calendar calendar){
+        return  LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
     }
     
     public static String beforeTime(LocalDateTime startDateTime) {
@@ -284,68 +291,39 @@ public class StockUtils {
     @AllArgsConstructor
     @Getter
     public static class StockHighest{
-        private HistoricalQuote maxQuote;   // 10년 내 최고가 일자 정보
+        private StockHistory maxQuote;   // 10년 내 최고가 일자 정보
     }
     
-    /**
-     * 기간내 최고가 찾기
-     * @param code
-     * @param investDate
-     * @return
-     */
-    @Cacheable(value = "stockHighestCache")
-    public StockHighest getStockHighest(String code, InvestDate investDate) {
-        return getStockHighestSync(code, investDate);
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class StockHighLow{
+        private String code;
+        private String company;
+        private BigDecimal price;
+        private BigDecimal changeInPercent;
+        
+        private BigDecimal dayHigh;
+        private BigDecimal dayLow;
+        private BigDecimal weekHigh;
+        private BigDecimal weekLow;
+        private BigDecimal yearHigh;
+        private BigDecimal yearLow;
     }
     
-    public static synchronized StockHighest getStockHighestSync(String code, InvestDate investDate) {
-        
-        yahoofinance.Stock yahooStock = null;
-        List<HistoricalQuote> quoteList = null;
-        
-        Calendar startDt = Calendar.getInstance();
-        Calendar endDt = Calendar.getInstance();
-        
-        switch (investDate) {
-            case DAY1 -> startDt.add(Calendar.DATE,-1);
-            case WEEK1 -> startDt.add(Calendar.WEEK_OF_YEAR, -1);
-            case MONTH1 -> startDt.add(Calendar.MONTH, -1);
-            case MONTH6 -> startDt.add(Calendar.MONTH, -6);
-            case YEAR1 -> startDt.add(Calendar.YEAR, -1);
-            case YEAR5 -> startDt.add(Calendar.YEAR, -5);
-            case YEAR10 -> startDt.add(Calendar.YEAR, -10);
-            default -> throw new IllegalArgumentException("Unexpected value: " + investDate);
-        };
-        
-        Comparator<HistoricalQuote> comparatorByHigh = 
-                (x1, x2) -> (x1.getHigh() == null || x2.getHigh() == null) ? 0 :x1.getHigh().compareTo(x2.getHigh());
-        
-        try {
-            yahooStock = "KS11".equals(code) ? YahooFinance.get("^" + code) : YahooFinance.get(code + ".KS");
-            quoteList = yahooStock.getHistory(startDt, endDt, Interval.DAILY);
-        } catch (IOException e) {
-            log.error("[" + code + "]의 정보를 가져오는데 실패", e);
-        }
-        
-        HistoricalQuote maxQuote = quoteList.stream().max(comparatorByHigh)
-                .orElseThrow(NoSuchElementException::new);
-        
-        try {
-            Thread.sleep(300);
-            log.info("0.3초 sleep == " + code);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("sleep 에러" + code, e);
-        }
-        
-        return StockHighest.builder()
-                .maxQuote(maxQuote)
-                .build();
+    @Builder
+    @AllArgsConstructor
+    @Getter
+    public static class StockHist{
+        private String code;
+        private String company;
+        private BigDecimal price;
+        private String lastTradeTime;
+        private BigDecimal change;
+        private BigDecimal changeInPercent;
+        private StockHistory maxQuote;   // 10년 내 최고가 일자 정보
+        private StockHistory minQuote;
+        private List<StockHistory> quoteList;
     }
-    
-    public static LocalDateTime getLocalDateTime(Calendar calendar){
-        return  LocalDateTime.ofInstant(calendar.toInstant(), calendar.getTimeZone().toZoneId());
-    }
-    
    
 }
