@@ -26,9 +26,9 @@ spring:
   profiles: local
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://13.124.97.47:5432/stocking 
-      username: stocking
-      password: stocking1234
+      jdbc-url: ${STOCKING_JDBC_URL}
+      username: ${STOCKING_USER}
+      password: ${STOCKING_PASSWORD}
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
       minimum-idle: 1
@@ -42,9 +42,9 @@ spring:
   profiles: develop
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://13.124.97.47:5432/stocking?sslmode=disable
-      username: stocking
-      password: stocking1234
+      jdbc-url: ${STOCKING_JDBC_URL}
+      username: ${STOCKING_USER}
+      password: ${STOCKING_PASSWORD}
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
       minimum-idle: 1
@@ -58,9 +58,9 @@ spring:
   profiles: production
   datasource:
     hikari:
-      jdbc-url: jdbc:postgresql://172.26.1.5:5432/stocking
-      username: stocking
-      password: stocking1234
+      jdbc-url: ${STOCKING_JDBC_URL}
+      username: ${STOCKING_USER}
+      password: ${STOCKING_PASSWORD}
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
       minimum-idle: 1
