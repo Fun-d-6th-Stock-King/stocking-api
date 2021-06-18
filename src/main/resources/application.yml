@@ -26,9 +26,9 @@ spring:
   profiles: local
   datasource:
     hikari:
-      jdbc-url: ${STOCKING_JDBC_URL}
-      username: ${STOCKING_USER}
-      password: ${STOCKING_PASSWORD}
+      jdbc-url: jdbc:postgresql://arjuna.db.elephantsql.com:5432/kfnzwjso
+      username: kfnzwjso
+      password: PN6khtXWIbRT_aeYwnMqSKFx81C8637B
       driver-class-name: org.postgresql.Driver
       connection-timeout: 30000
       minimum-idle: 1
