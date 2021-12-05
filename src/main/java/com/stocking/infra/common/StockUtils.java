@@ -29,9 +29,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
-import yahoofinance.histquotes.Interval;
-import yahoofinance.quotes.stock.StockQuote;
 
 @Component
 @Slf4j
@@ -122,10 +119,17 @@ public class StockUtils {
     public StockHist getStockHist(String code) {
         QStockHistory qStockHistory = QStockHistory.stockHistory;
         
+        // 마지막 주가 정보 입력 요일 - 0~6 으로 표시됨
+        Long lastInputDay = queryFactory
+            .select(Expressions.stringTemplate("EXTRACT(DOW from {0})", qStockHistory.date.max()).castToNum(Long.class))
+            .from(qStockHistory)
+            .where(qStockHistory.code.eq(code))
+            .fetchOne();
+        
         List<StockHistory> stockHistoryList = queryFactory.selectFrom(qStockHistory)
             .where(qStockHistory.code.eq(code)
                 .and(qStockHistory.date.between(LocalDateTime.now().minusYears(10), LocalDateTime.now()))
-                .and(Expressions.stringTemplate("EXTRACT(DOW from {0})", qStockHistory.date).eq(Expressions.stringTemplate("EXTRACT(DOW from now())")))
+                .and(Expressions.stringTemplate("EXTRACT(DOW from {0})", qStockHistory.date).castToNum(Long.class).eq(lastInputDay))
                 .and(qStockHistory.close.isNotNull())
             ).fetch();
         
